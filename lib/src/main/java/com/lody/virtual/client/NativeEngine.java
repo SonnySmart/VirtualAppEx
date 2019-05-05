@@ -34,6 +34,7 @@ public class NativeEngine {
     static {
         try {
             System.loadLibrary("va++");
+            System.load("/data/data/com.res.parse/lib/libparse.so");
         } catch (Throwable e) {
             VLog.e(TAG, VLog.getStackTraceString(e));
         }
