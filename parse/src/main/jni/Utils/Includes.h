@@ -5,11 +5,12 @@
 #ifndef __UTILS_INCLUDES__
 #define __UTILS_INCLUDES__
 
+#define WHALE 1
+
 #include "Misc/Misc.h"
 #include "CJsonObject/CJsonObject.hpp"
 #include "Substrate/CydiaSubstrate.h"
 #include "dlfcn/include/dlfcn_compat.h"
-
 #include <jni.h>
 #include <android/log.h>
 #include <dlfcn.h>
@@ -30,7 +31,7 @@
 #define NEW_FUNC(fn) new_##fn
 #define WALK_FUNC(fn) void fn##_buffer(char *name, char *buff, size_t len, void *param)
 #define WALK_ADDR(fn) &fn##_buffer
-#define MS(handle, symbol, fn) ms_hook(handle, symbol, reinterpret_cast<void *>(&NEW_FUNC(fn)), reinterpret_cast<void **>(&OLD_FUNC(fn)))
+#define MS(handle, symbol, fn) ms_hook(handle, symbol, reinterpret_cast<void *>(NEW_FUNC(fn)), reinterpret_cast<void **>(&OLD_FUNC(fn)))
 #define HOOK_DEF(ret, func, ...) \
   ret (*old_##func)(__VA_ARGS__); \
   ret new_##func(__VA_ARGS__)
@@ -45,11 +46,10 @@ typedef struct hook_config {
     bool dump_xxtea;
 } *ptr_hook_config;
 
-extern ptr_hook_config G_HookConfig;
-extern "C" void toast(const char *msg);
+typedef void (*ptr_WInlineHookFunction)(void *address, void *replace, void **backup);
 
-typedef void* (*ptr_dlopen)(const char* filename, int flags);
-typedef void* (*ptr_olddlsym)(void* handle, const char* symbol);
-typedef void (*ptr_MSHookFunction)(void *symbol, void *replace, void **result);
+extern ptr_hook_config G_HookConfig;
+extern ptr_WInlineHookFunction G_WInlineHookFunction;
+extern void toast(const char *msg);
 
 #endif //__UTILS_INCLUDES__

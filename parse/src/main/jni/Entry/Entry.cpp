@@ -32,12 +32,6 @@ extern "C" void hook_entry(const char *name, void *handle)
         }
     }
 
-    goto end;
-
-    pass:
-    DUALLOGE("[+] [%s] name[%s] handle[%p] hooked .", __FUNCTION__, name, handle);
-    return;
-
-	end:
+	pass:
     DUALLOGD("[+] [%s] name[%s] handle[%p] hooked .", __FUNCTION__, name, handle);
 }

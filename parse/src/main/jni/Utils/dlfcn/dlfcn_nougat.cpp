@@ -103,7 +103,7 @@ void *fake_dlopen_with_path(const char *libpath, int flags) {
     /* Now, mmap the same library once again */
 
     fd = open(libpath, O_RDONLY);
-    if (fd < 0) fatal("failed to open %s", libpath);
+    if (fd < 0) fatal("failed to open %s errno %s", libpath, errno);
 
     size = lseek(fd, 0, SEEK_END);
     if (size <= 0) fatal("lseek() failed for %s", libpath);

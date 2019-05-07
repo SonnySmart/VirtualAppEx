@@ -206,4 +206,6 @@ void cocos_entry(void *handle)
     }
 
     DUALLOGW("[+] [%s] end", __FUNCTION__);
+
+    toast("cocos 注入成功");
 }

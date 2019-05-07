@@ -13,24 +13,23 @@
 #include <dirent.h>
 #include <vector>
 
-const std::string &read_string(const char *filename)
+void read_string(const char *filename, std::string &ret)
 {
-    std::ifstream ifile(filename);
-    if (!ifile) {
+    FILE *fp;
+    if (!(fp = fopen(filename, "r"))) {
         DUALLOGE("[-] [%s] file not exist [%s]", __FUNCTION__, filename);
-        return "";
+        return;
     }
 
-    //将文件读入到ostringstream对象buf中
-    std::ostringstream buf;
-    char ch;
-    while(buf && ifile.get(ch))
-        buf.put(ch);
+    fseek(fp, 0, SEEK_END);
+    size_t len = ftell(fp);
+    fseek(fp, 0, SEEK_SET);
+    void *buff = malloc(len);
+    if (fread(buff, 1u, len, fp) <= 0)
+        return;
 
-    ifile.close();
-
-    //返回与流对象buf关联的字符串
-    return buf.str();
+    ret = (char *)buff;
+    free(buff);
 }
 
 void read_buffer(const char *filename, char *&buff, size_t &out_len)
@@ -287,11 +286,15 @@ bool ms_hook(void *handle, const char *symbol, void *replace, void **result)
     void *sym = dlsym_compat(handle, symbol);
     if (!sym)
     {
-        DUALLOGE("[-] [%s] symbol[%p] dlerror[%s]", __FUNCTION__, sym, dlerror());
+        DUALLOGE("[-] [%s] symbol[%s] dlerror[%s]", __FUNCTION__, symbol, dlerror_compat());
         return false;
     }
 
+#if WHALE
+    G_WInlineHookFunction(sym, replace, result);
+#else
     MSHookFunction(sym, replace, result);
+#endif
 
     DUALLOGI("[+] MSHookFunction symbol[%s]", symbol);
 

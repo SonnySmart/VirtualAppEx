@@ -11,7 +11,7 @@
 typedef void (*ptr_read_buffer)(char *name, char *buff, size_t len, void *param);
 
 // read string
-const std::string &read_string(const char *filename);
+void read_string(const char *filename, std::string &ret);
 // read buffer
 void read_buffer(const char *filename, char *&buff, size_t &out_len);
 // 遍历文件夹
