@@ -26,7 +26,9 @@ int dump_write(const char *pack, const char *path, const char *name, const char 
 int replace_buffer(const char *root, const char *name, const std::vector<std::string> &r, void *&out_buffer, size_t &out_len);
 // 获取存储asset路径
 const char *assets_name(const char *name, const char *tmp_path);
-// ms_hook封装
-bool ms_hook(void *handle, const char *symbol, void *replace, void **result);
+// inline_hook
+bool inline_hook(void *handle, const char *symbol_name, void *replace, void **result);
+// findSymbol
+int findSymbol(const char *name, const char *libn, unsigned long *addr);
 
 #endif //__UTILS_MISC__

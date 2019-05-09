@@ -275,7 +275,7 @@ const char *assets_name(const char *name, const char *tmp_path)
     return filename.c_str();
 }
 
-bool ms_hook(void *handle, const char *symbol, void *replace, void **result)
+bool inline_hook(void *handle, const char *symbol_name, void *replace, void **result)
 {
     if (!handle)
     {
@@ -283,20 +283,28 @@ bool ms_hook(void *handle, const char *symbol, void *replace, void **result)
         return false;
     }
 
-    void *sym = dlsym_compat(handle, symbol);
-    if (!sym)
+    void *symbol = dlsym_compat(handle, symbol_name);
+    if (!symbol)
     {
-        DUALLOGE("[-] [%s] symbol[%s] dlerror[%s]", __FUNCTION__, symbol, dlerror_compat());
+        DUALLOGE("[-] [%s] symbol[%s] dlerror[%s]", __FUNCTION__, symbol_name, dlerror());
         return false;
     }
 
+//    void *symbol = NULL;
+//    if (findSymbol(symbol_name, libname, (unsigned long *)&symbol) != 0)
+//        return false;
+
 #if WHALE
-    G_WInlineHookFunction(sym, replace, result);
+    G_WInlineHookFunction(symbol, replace, result);
 #else
-    MSHookFunction(sym, replace, result);
+    MSHookFunction(symbol, replace, result);
 #endif
 
-    DUALLOGI("[+] MSHookFunction symbol[%s]", symbol);
+    DUALLOGI("[+] [%s] symbol_name[%s] symbol[%p]", __FUNCTION__, symbol_name, symbol);
 
     return true;
+}
+
+int findSymbol(const char *name, const char *libn, unsigned long *addr) {
+    return find_name(getpid(), name, libn, addr);
 }

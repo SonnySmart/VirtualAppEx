@@ -629,7 +629,7 @@ __END_DECLS
 
 
 void onSoLoaded(const char *name, void *handle) {
-    ALOGD("[+] [%s] name[%s] handle[%p]", __FUNCTION__, name, handle);
+    //ALOGD("[+] [%s] name[%s] handle[%p]", __FUNCTION__, name, handle);
 }
 
 int findSymbol(const char *name, const char *libn,

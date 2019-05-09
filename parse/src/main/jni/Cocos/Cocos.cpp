@@ -141,7 +141,6 @@ int NEW_FUNC(luaL_loadbuffer)(void *L, const char *buff, size_t size, const char
     //DUALLOGD("[+] [%s] buff[%p] size[%d] name[%s]", __FUNCTION__, buff, size, name);
     if (strstr(name, TEMP_PATH) && buff && size > 0)
         dump_write(PACK_NAME, ASSET_PATH, ASSET_NAME(name), buff, size);
-
     return old_luaL_loadbuffer(L, buff, size, name);
 }
 
@@ -151,13 +150,13 @@ WALK_FUNC(luaLoadBuffer)
     if (!check_lua(name))
         return;
 
-    if (buff && len > 0)
-        OLD_FUNC(luaLoadBuffer)(((luaL_param *)param)->self, ((luaL_param *)param)->L, buff, len, name);
-    else
-        DUALLOGE("[-] [%s] name[%s]", __FUNCTION__, name);
+    //DUALLOGD("[+] [%s] name[%s] buff[%p] len[%d] self[%p] L[%p]", __FUNCTION__, name, buff, len, ((luaL_param *)param)->self, ((luaL_param *)param)->L);
+
+    OLD_FUNC(luaLoadBuffer)(((luaL_param *)param)->self, ((luaL_param *)param)->L, buff, len, name);
 }
 int NEW_FUNC(luaLoadBuffer)(void *self, void *L, const char *chunk, int chunkSize, const char *chunkName)
 {
+    //DUALLOGD(" ... G_walkCount[%d]", G_walkCount);
     luaL_param param;
     param.L = L;
     param.self = self;
@@ -168,13 +167,33 @@ int NEW_FUNC(luaLoadBuffer)(void *self, void *L, const char *chunk, int chunkSiz
 }
 
 unsigned char *OLD_FUNC_PTR(xxtea_decrypt)(unsigned char *data, unsigned int data_len, unsigned char *key, unsigned int key_len, unsigned int *ret_length);
+WALK_FUNC(xxtea_decrypt)
+{
+    if (!check_lua(name))
+        return;
+
+    DUALLOGD("[+] [%s] name[%s] buff[%p] len[%d]", __FUNCTION__, name, buff, len);
+
+    size_t sign_len = 8;
+    size_t ret_len = 0;
+    unsigned char *ret = OLD_FUNC(xxtea_decrypt)((unsigned char *)buff + sign_len, len - sign_len, (unsigned char *)((xxtea_param *)param)->key.c_str(), ((xxtea_param *)param)->key_len, &ret_len);
+    if (ret && ret_len > 0)
+        dump_write(PACK_NAME, ASSET_PATH, ASSET_NAME(name), (const char *)ret, ret_len);
+
+    if (ret) free(ret);
+}
 unsigned char *NEW_FUNC(xxtea_decrypt)(unsigned char *data, unsigned int data_len, unsigned char *key, unsigned int key_len, unsigned int *ret_length)
 {
+    xxtea_param param;
+    param.key = (char *)key;
+    param.key_len = key_len;
+    //filewalk(TEMP_PATH, WALK_ADDR(xxtea_decrypt), &param, G_walkCount);
+
     DUALLOGD("[+] [%s] key[%s] key_len[%d]", __FUNCTION__, key, key_len);
     return OLD_FUNC(xxtea_decrypt)(data, data_len, key, key_len, ret_length);
 }
 
-void cocos_entry(void *handle)
+void cocos_entry(const char *name, void *handle)
 {
     G_walkCount = 0;
 
@@ -207,5 +226,5 @@ void cocos_entry(void *handle)
 
     DUALLOGW("[+] [%s] end", __FUNCTION__);
 
-    toast("cocos 注入成功");
+    //toast("cocos 注入成功");
 }

@@ -33,8 +33,9 @@ public class NativeEngine {
 
     static {
         try {
-            System.loadLibrary("whale");
             System.loadLibrary("va++");
+            //System.loadLibrary("whale");
+            System.loadLibrary("parse");
         } catch (Throwable e) {
             VLog.e(TAG, VLog.getStackTraceString(e));
         }

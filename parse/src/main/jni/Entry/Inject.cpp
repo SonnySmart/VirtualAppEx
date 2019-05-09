@@ -2,6 +2,8 @@
 #include "../Utils/Includes.h"
 #include <pthread.h>
 
+#define FREE(ptr, org_ptr) { if ((void*) ptr != NULL && (void*) ptr != (void*) org_ptr) { free((void*) ptr); } }
+
 using namespace neb;
 
 JavaVM *G_VM = NULL;
@@ -12,30 +14,82 @@ ptr_WInlineHookFunction G_WInlineHookFunction = NULL;
 extern "C" bool loadConfig();
 extern "C" void hook_entry(const char *name, void *handle);
 
-//extern "C" __attribute__((constructor)) void _start(void) {
-//    void *handle = NULL;
-//    void *symbol = NULL;
-//    do {
-//        if (G_VM) break;
-//
-//        if (!loadConfig()) break;
-//
-//#if WHALE
-//        if (!(handle = dlopen_compat("libwhale.so", RTLD_NOW)))
-//            break;
-//
-//        if (!(symbol = dlsym_compat(handle, "WInlineHookFunction")))
-//            break;
-//
-//        G_WInlineHookFunction = (ptr_WInlineHookFunction)symbol;
-//#endif
-//    } while (0);
-//}
+void onSoLoaded(const char *name, void *handle) {
+    //ALOGD("[+] [%s] name[%s] handle[%p]", __FUNCTION__, name, handle);
+    hook_entry(name, handle);
+}
+
+HOOK_DEF(void*, dlopen, const char *filename, int flag) {
+    int res;
+    const char *redirect_path = relocate_path(filename, &res);
+    void *ret = old_dlopen(redirect_path, flag);
+    onSoLoaded(filename, ret);
+    //ALOGD("dlopen : %s, return : %p.", redirect_path, ret);
+    FREE(redirect_path, filename);
+    return ret;
+}
+
+HOOK_DEF(void*, do_dlopen_V19, const char *filename, int flag, const void *extinfo) {
+    int res;
+    const char *redirect_path = relocate_path(filename, &res);
+    void *ret = old_do_dlopen_V19(redirect_path, flag, extinfo);
+    onSoLoaded(filename, ret);
+    //ALOGD("do_dlopen : %s, return : %p.", redirect_path, ret);
+    FREE(redirect_path, filename);
+    return ret;
+}
+
+HOOK_DEF(void*, do_dlopen_V24, const char *name, int flags, const void *extinfo,
+         void *caller_addr) {
+    int res;
+    const char *redirect_path = relocate_path(name, &res);
+    void *ret = old_do_dlopen_V24(redirect_path, flags, extinfo, caller_addr);
+    onSoLoaded(name, ret);
+    //ALOGD("do_dlopen : %s, return : %p.", redirect_path, ret);
+    FREE(redirect_path, name);
+    return ret;
+}
 
 HOOK_DEF(void, onSoLoaded, const char *name, void *handle)
 {
     hook_entry(name, handle);
     //OLD_FUNC(onSoLoaded)(name, handle);
+}
+
+void hook_dlopen(int api_level) {
+    void *symbol = NULL;
+    if (api_level > 23) {
+        if (findSymbol("__dl__Z9do_dlopenPKciPK17android_dlextinfoPv", "linker",
+                       (unsigned long *) &symbol) == 0) {
+#if WHALE
+            G_WInlineHookFunction(symbol, (void *) new_do_dlopen_V24,
+                           (void **) &old_do_dlopen_V24);
+#else
+            MSHookFunction(symbol, (void *) new_do_dlopen_V24,
+                           (void **) &old_do_dlopen_V24);
+#endif
+        }
+    } else if (api_level >= 19) {
+        if (findSymbol("__dl__Z9do_dlopenPKciPK17android_dlextinfo", "linker",
+                       (unsigned long *) &symbol) == 0) {
+#if WHALE
+            G_WInlineHookFunction(symbol, (void *) new_do_dlopen_V19,
+                           (void **) &old_do_dlopen_V19);
+#else
+            MSHookFunction(symbol, (void *) new_do_dlopen_V19,
+                           (void **) &old_do_dlopen_V19);
+#endif
+        }
+    } else {
+        if (findSymbol("__dl_dlopen", "linker",
+                       (unsigned long *) &symbol) == 0) {
+#if WHALE
+            G_WInlineHookFunction(symbol, (void *) new_dlopen, (void **) &old_dlopen);
+#else
+            MSHookFunction(symbol, (void *) new_dlopen, (void **) &old_dlopen);
+#endif
+        }
+    }
 }
 
 //注入后初始化并读取配置
@@ -51,28 +105,34 @@ JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved)
         return JNI_ERR;
     }
 
+    DUALLOGD("[+] [%s] sdk_level[%d]", __FUNCTION__, get_sdk_level());
+
 	do {
 	    if (G_VM) break;
+
+        G_VM = vm;
 
         if (!loadConfig()) break;
 
 #if WHALE
-        if (!(handle = dlopen_compat("libwhale.so", RTLD_NOW)))
-            break;
-
-        if (!(symbol = dlsym_compat(handle, "WInlineHookFunction")))
+        symbol = NULL;
+        if (findSymbol("WInlineHookFunction", "libwhale.so", (unsigned long *)&symbol) != 0)
             break;
 
         G_WInlineHookFunction = (ptr_WInlineHookFunction)symbol;
 #endif
-
-        if (!(handle = dlopen_compat("libva++.so", RTLD_NOW)))
+        symbol = NULL;
+        if (findSymbol("_Z10onSoLoadedPKcPv", "libva++.so", (unsigned long *)&symbol) != 0)
             break;
+#if WHALE
+        //G_WInlineHookFunction(symbol, (void *)NEW_FUNC(onSoLoaded), (void **)&OLD_FUNC(onSoLoaded));
+#else
+        //MSHookFunction(symbol, (void *)NEW_FUNC(onSoLoaded), (void **)&OLD_FUNC(onSoLoaded));
+#endif
+        hook_dlopen(get_sdk_level());
 
-        MS(handle, "_Z10onSoLoadedPKcPv", onSoLoaded);
+        DUALLOGD("[+] [%s] hook_dlopen finish .", __FUNCTION__);
 	} while (0);
-
-    G_VM = vm;
 
     return JNI_VERSION_1_4;
 }
