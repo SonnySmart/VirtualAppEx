@@ -99,14 +99,21 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="dump res getFileData 自解密" />
+            android:text="dump res FileUtilsAndroid::getFileData 自解密" />
+
+        <CheckBox
+            android:id="@+id/check_dump_res2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="dump res FileUtils::getDataFromFile 自解密" />
 
         <CheckBox
             android:id="@+id/check_dump_res1"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="dump res Image::init 自解密" />
+            android:text="dump res Image::initWithImageFile 自解密" />
 
         <CheckBox
             android:id="@+id/check_dump_more"

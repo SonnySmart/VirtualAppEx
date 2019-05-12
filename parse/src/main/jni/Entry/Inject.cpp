@@ -16,7 +16,10 @@ extern "C" void hook_entry(const char *name, void *handle);
 
 void onSoLoaded(const char *name, void *handle) {
     //ALOGD("[+] [%s] name[%s] handle[%p]", __FUNCTION__, name, handle);
-    hook_entry(name, handle);
+
+    // so名称包含了包名 && hook名
+    if (strstr(name, PACK_NAME) && strstr(name, HOOK_NAME))
+        hook_entry(name, handle);
 }
 
 HOOK_DEF(void*, dlopen, const char *filename, int flag) {
@@ -65,6 +68,7 @@ void hook_dlopen(int api_level) {
             G_WInlineHookFunction(symbol, (void *) new_do_dlopen_V24,
                            (void **) &old_do_dlopen_V24);
 #else
+            DUALLOGD("__dl__Z9do_dlopenPKciPK17android_dlextinfoPv");
             MSHookFunction(symbol, (void *) new_do_dlopen_V24,
                            (void **) &old_do_dlopen_V24);
 #endif
@@ -76,6 +80,7 @@ void hook_dlopen(int api_level) {
             G_WInlineHookFunction(symbol, (void *) new_do_dlopen_V19,
                            (void **) &old_do_dlopen_V19);
 #else
+            DUALLOGD("__dl__Z9do_dlopenPKciPK17android_dlextinfo");
             MSHookFunction(symbol, (void *) new_do_dlopen_V19,
                            (void **) &old_do_dlopen_V19);
 #endif
@@ -86,6 +91,7 @@ void hook_dlopen(int api_level) {
 #if WHALE
             G_WInlineHookFunction(symbol, (void *) new_dlopen, (void **) &old_dlopen);
 #else
+            DUALLOGD("__dl_dlopen");
             MSHookFunction(symbol, (void *) new_dlopen, (void **) &old_dlopen);
 #endif
         }
@@ -121,9 +127,9 @@ JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved)
 
         G_WInlineHookFunction = (ptr_WInlineHookFunction)symbol;
 #endif
-        symbol = NULL;
-        if (findSymbol("_Z10onSoLoadedPKcPv", "libva++.so", (unsigned long *)&symbol) != 0)
-            break;
+//        symbol = NULL;
+//        if (findSymbol("_Z10onSoLoadedPKcPv", "libva++.so", (unsigned long *)&symbol) != 0)
+//            break;
 #if WHALE
         //G_WInlineHookFunction(symbol, (void *)NEW_FUNC(onSoLoaded), (void **)&OLD_FUNC(onSoLoaded));
 #else
@@ -149,6 +155,7 @@ extern "C" bool loadConfig()
 	std::string dump_dll;
 	std::string dump_res;
     std::string dump_res1;
+    std::string dump_res2;
     std::string dump_xxtea;
 	G_HookConfig = new hook_config();
 	CJsonObject *json = new CJsonObject(jsonString);
@@ -158,6 +165,7 @@ extern "C" bool loadConfig()
 	json->Get("dump_dll", dump_dll);
 	json->Get("dump_res", dump_res);
     json->Get("dump_res1", dump_res1);
+    json->Get("dump_res2", dump_res2);
     json->Get("dump_xxtea", dump_xxtea);
 	delete json;
 
@@ -165,6 +173,7 @@ extern "C" bool loadConfig()
 	G_HookConfig->dump_dll = dump_dll == "1";
 	G_HookConfig->dump_res = dump_res == "1";
     G_HookConfig->dump_res1 = dump_res1 == "1";
+    G_HookConfig->dump_res2 = dump_res2 == "1";
     G_HookConfig->dump_xxtea = dump_xxtea == "1";
 
     return true;

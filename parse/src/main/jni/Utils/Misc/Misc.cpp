@@ -166,6 +166,7 @@ int dump_write(const char *pack, const char *path, const char *name, const char 
         return -1;
 
     std::string filename(name);
+    // 空名称转换为0xffffff-100文件名
     if (filename.empty())
     {
         char tmp[32] = { 0 };
@@ -173,23 +174,29 @@ int dump_write(const char *pack, const char *path, const char *name, const char 
         filename.append(tmp);
     }
 
+    // 查找文件后缀
     std::string::size_type npos = filename.find_last_of('.');
     if (npos == std::string::npos)
         return -1;
 
+    // 获取文件后缀
     std::string suffixStr = filename.substr(npos + 1);
+    // luac替换为lua
     if (suffixStr == "luac")
         filename = filename.substr(0, npos).append(".lua");
 
-    if ((npos = filename.find(".apk/")) != std::string::npos)
-        filename = filename.substr(npos + 5);
+    //if ((npos = filename.find(".apk/")) != std::string::npos)
+        //filename = filename.substr(npos + 5);
 
+    // /sdcard/myhook/tmp + packagename + filename全路径
     std::string full(path);
     full.append("/").append(pack).append("/").append(filename);
     const char *fullname = full.c_str();
+    // 文件存在就返回不覆盖操作
     if (access(fullname, F_OK) == 0)
         return -2;
 
+    // 检测文件是否有没创建的文件夹
     std::size_t i = full.find_last_of("/");
     if (i != std::string::npos)
     {
@@ -200,6 +207,7 @@ int dump_write(const char *pack, const char *path, const char *name, const char 
         }
     }
 
+    // 写入文件
     FILE *fd = fopen(fullname, "wb");
     if (fd) {
         if (fwrite(buff, len, 1u, fd) > 0) {
@@ -283,7 +291,7 @@ bool inline_hook(void *handle, const char *symbol_name, void *replace, void **re
         return false;
     }
 
-    void *symbol = dlsym_compat(handle, symbol_name);
+    void *symbol = dlsym(handle, symbol_name);
     if (!symbol)
     {
         DUALLOGE("[-] [%s] symbol[%s] dlerror[%s]", __FUNCTION__, symbol_name, dlerror());

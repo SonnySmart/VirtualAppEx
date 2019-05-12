@@ -56,6 +56,7 @@ typedef struct hook_config {
     bool dump_dll;
     bool dump_res;
     bool dump_res1;
+    bool dump_res2;
     bool dump_xxtea;
 } *ptr_hook_config;
 

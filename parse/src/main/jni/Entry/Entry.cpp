@@ -16,30 +16,25 @@ extern "C" void hook_entry(const char *name, void *handle)
         return;
     }
 
+    //DUALLOGD("[+] [%s] name[%s]", __FUNCTION__, name);
+
     if (!symbol)
     {
-//        if (findSymbol("mono_image_init", name, (unsigned long *)&symbol) == 0)
-//        {
-//            unity_entry(name, handle);
-//            goto pass;
-//        }
-//        if (findSymbol("_ZN7cocos2d14cocos2dVersionEv", name, (unsigned long *)&symbol) == 0)
-//        {
-//            DUALLOGD("zhao dao le ,");
-//            cocos_entry(name, handle);
-//            goto pass;
-//        }
         //mono_image_init
-        if ((symbol = dlsym_compat(handle, "mono_image_init")))
+        if ((symbol = dlsym(handle, "mono_image_init")))
         {
             unity_entry(name, handle);
             DUALLOGD("[+] [%s] name[%s] handle[%p] hooked .", __FUNCTION__, name, handle);
+        } else {
+            DUALLOGE("[-] [%s] handle[%p] dlerrpr[%s]", __FUNCTION__, handle, dlerror());
         }
         //_ZN7cocos2d14cocos2dVersionEv
-        if ((symbol = dlsym_compat(handle, "_ZN7cocos2d14cocos2dVersionEv")))
+        if ((symbol = dlsym(handle, "_ZN7cocos2d14cocos2dVersionEv")))
         {
             cocos_entry(name, handle);
             DUALLOGD("[+] [%s] name[%s] handle[%p] hooked .", __FUNCTION__, name, handle);
+        } else {
+            DUALLOGE("[-] [%s] handle[%p] dlerrpr[%s]", __FUNCTION__, handle, dlerror());
         }
     }
 }

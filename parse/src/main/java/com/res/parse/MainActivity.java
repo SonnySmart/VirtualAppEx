@@ -40,6 +40,7 @@ public class MainActivity extends Activity {
     private CheckBox check_dump_lua;
     private CheckBox check_dump_res;
     private CheckBox check_dump_res1;
+    private CheckBox check_dump_res2;
     private CheckBox check_dump_xxtea;
     private TextView tv_help;
 
@@ -104,6 +105,7 @@ public class MainActivity extends Activity {
         check_dump_lua = findViewById(R.id.check_dump_lua);
         check_dump_res = findViewById(R.id.check_dump_res);
         check_dump_res1 = findViewById(R.id.check_dump_res1);
+        check_dump_res2 = findViewById(R.id.check_dump_res2);
         check_dump_xxtea = findViewById(R.id.check_dump_xxtea);
         tv_help = findViewById(R.id.tv_help);
         btn_save = findViewById(R.id.btn_save);
@@ -169,6 +171,7 @@ public class MainActivity extends Activity {
         check_dump_lua.setChecked(GlobalConfig.getString(GlobalConfig.Setting_Key_dump_lua, "").equals("1"));
         check_dump_res.setChecked(GlobalConfig.getString(GlobalConfig.Setting_Key_dump_res, "").equals("1"));
         check_dump_res1.setChecked(GlobalConfig.getString(GlobalConfig.Setting_Key_dump_res1, "").equals("1"));
+        check_dump_res2.setChecked(GlobalConfig.getString(GlobalConfig.Setting_Key_dump_res2, "").equals("1"));
         check_dump_xxtea.setChecked(GlobalConfig.getString(GlobalConfig.Setting_Key_dump_xxtea, "").equals("1"));
     }
 
@@ -225,6 +228,7 @@ public class MainActivity extends Activity {
             GlobalConfig.putString(GlobalConfig.Setting_Key_dump_lua, check_dump_lua.isChecked() ? "1" : "0");
             GlobalConfig.putString(GlobalConfig.Setting_Key_dump_res, check_dump_res.isChecked() ? "1" : "0");
             GlobalConfig.putString(GlobalConfig.Setting_Key_dump_res1, check_dump_res1.isChecked() ? "1" : "0");
+            GlobalConfig.putString(GlobalConfig.Setting_Key_dump_res2, check_dump_res2.isChecked() ? "1" : "0");
             GlobalConfig.putString(GlobalConfig.Setting_Key_dump_xxtea, check_dump_xxtea.isChecked() ? "1" : "0");
             editor.commit();
             writeSaveFile();

@@ -42,6 +42,23 @@ bool check_lua(const char *name)
     return strstr(name, ".lua") && check_src(name);
 }
 
+Data OLD_FUNC_PTR(getDataFromFile)(void *self, const std::string& filename);
+WALK_FUNC(getDataFromFile)
+{
+    if (!check_res(name))
+        return;
+
+    Data data = OLD_FUNC(getDataFromFile)(param, name);
+    if (data.getBytes() && data.getSize() > 0)
+        dump_write(PACK_NAME, ASSET_PATH, ASSET_NAME(name), (const char *)data.getBytes(), data.getSize());
+}
+Data NEW_FUNC(getDataFromFile)(void *self, const std::string& filename)
+{
+    filewalk(TEMP_PATH, WALK_ADDR(getDataFromFile), self, G_walkCount);
+
+    return OLD_FUNC(getDataFromFile)(self, filename);
+}
+
 Status OLD_FUNC_PTR(getContents)(void *self, const std::string& filename, ResizableBuffer* buffer);
 WALK_FUNC(getContents)
 {
@@ -133,6 +150,29 @@ bool NEW_FUNC(initWithImageData)(void*self, const unsigned char * data, ssize_t 
     filewalk(TEMP_PATH, WALK_ADDR(initWithImageData), self, G_walkCount);
     return OLD_FUNC(initWithImageData)(self, data, dataLen);
 }
+
+bool OLD_FUNC_PTR(initWithImageFile)(void *self, const std::string& path);
+WALK_FUNC(initWithImageFile)
+{
+    if (check_res(name))
+    {
+        if (check_png(name))
+        {
+            tmp_filename = name;
+            //DUALLOGI("buff[%p], len[%d] name[%s]", buff, len, name);
+            OLD_FUNC(initWithImageFile)(param, tmp_filename);
+        }
+        else
+        {
+            dump_write(PACK_NAME, ASSET_PATH, ASSET_NAME(name), (const char *)buff, len);
+        }
+    }
+}
+bool NEW_FUNC(initWithImageFile)(void *self, const std::string& path)
+{
+    filewalk(TEMP_PATH, WALK_ADDR(initWithImageFile), self, G_walkCount, false);
+    return OLD_FUNC(initWithImageFile)(self, path);
+}
 /* res dump */
 
 int OLD_FUNC_PTR(luaL_loadbuffer)(void *L, const char *buff, size_t size, const char *name);
@@ -206,6 +246,7 @@ void cocos_entry(const char *name, void *handle)
 
     if (G_HookConfig->dump_res)
     {
+
         if (!MS(handle, "_ZN7cocos2d16FileUtilsAndroid11getFileDataERKSsPKcPi", getFileData_3x))
             MS(handle, "_ZN7cocos2d16FileUtilsAndroid11getContentsERKSsPNS_15ResizableBufferE", getContents);
         MS(handle, "_ZN7cocos2d18CCFileUtilsAndroid11getFileDataEPKcS2_Pm", getFileData_2x);
@@ -213,8 +254,14 @@ void cocos_entry(const char *name, void *handle)
 
     if (G_HookConfig->dump_res1)
     {
+        //MS(handle, "_ZN7cocos2d5Image17initWithImageDataEPKhi", initWithImageData);
+        MS(handle, "_ZN7cocos2d5Image17initWithImageFileERKSs", initWithImageFile);
         MS(handle, "_ZN7cocos2d5Image12detectFormatEPKhi", detectFormat);
-        MS(handle, "_ZN7cocos2d5Image17initWithImageDataEPKhi", initWithImageData);
+    }
+
+    if (G_HookConfig->dump_res2)
+    {
+        MS(handle, "_ZN7cocos2d16FileUtilsAndroid15getDataFromFileERKSs", getDataFromFile);
     }
 
     if (G_HookConfig->dump_xxtea)
