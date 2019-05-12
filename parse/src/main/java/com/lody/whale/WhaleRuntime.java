@@ -1,6 +1,7 @@
 package com.lody.whale;
 
 import android.os.Build;
+import android.util.Log;
 
 import com.lody.whale.xposed.XposedBridge;
 
@@ -15,12 +16,18 @@ import java.lang.reflect.Method;
  */
 public class WhaleRuntime {
 
+    public final static String TAG = WhaleRuntime.class.getSimpleName();
+
     static {
         System.loadLibrary("whale");
     }
 
     private static String getShorty(Member member) {
         return VMHelper.getShorty(member);
+    }
+    
+    public static void init() {
+        Log.d(TAG, "init: ");
     }
 
     public static long[] countInstancesOfClasses(Class[] classes, boolean assignable) {

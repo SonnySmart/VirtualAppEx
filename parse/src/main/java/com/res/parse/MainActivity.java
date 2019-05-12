@@ -7,7 +7,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
-import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
@@ -21,13 +20,13 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.res.app.FileChooseUtil;
-
 import org.json.JSONException;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 
 import static com.res.parse.GlobalConfig.editor;
@@ -238,14 +237,14 @@ public class MainActivity extends Activity {
         }
     }
 
-    void onClickStart()
-    {
+    void onClickStart() {
+        String packageName = et_inject_pckname.getText().toString();
         PackageManager packageManager = getPackageManager();
         Intent intent= new Intent();
-        intent = packageManager.getLaunchIntentForPackage(et_inject_pckname.getText().toString());
+        intent = packageManager.getLaunchIntentForPackage(packageName);
         if(intent == null) {
             Toast.makeText(MainActivity.this, "未安装", Toast.LENGTH_LONG).show();
-        }else{
+        } else {
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(intent);
         }

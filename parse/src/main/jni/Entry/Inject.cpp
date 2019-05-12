@@ -101,11 +101,10 @@ void hook_dlopen(int api_level) {
 //注入后初始化并读取配置
 JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved)
 {
-    void *handle = NULL;
     void *symbol = NULL;
     JNIEnv* env = NULL;
 
-    if (vm->GetEnv((void**)&env, JNI_VERSION_1_4) != JNI_OK)
+    if (vm->GetEnv((void**)&env, JNI_VERSION_1_6) != JNI_OK)
     {
         DUALLOGE("[-] [%s] GetEnv Error .", __FUNCTION__);
         return JNI_ERR;
@@ -127,20 +126,12 @@ JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved)
 
         G_WInlineHookFunction = (ptr_WInlineHookFunction)symbol;
 #endif
-//        symbol = NULL;
-//        if (findSymbol("_Z10onSoLoadedPKcPv", "libva++.so", (unsigned long *)&symbol) != 0)
-//            break;
-#if WHALE
-        //G_WInlineHookFunction(symbol, (void *)NEW_FUNC(onSoLoaded), (void **)&OLD_FUNC(onSoLoaded));
-#else
-        //MSHookFunction(symbol, (void *)NEW_FUNC(onSoLoaded), (void **)&OLD_FUNC(onSoLoaded));
-#endif
         hook_dlopen(get_sdk_level());
 
         DUALLOGD("[+] [%s] hook_dlopen finish .", __FUNCTION__);
 	} while (0);
 
-    return JNI_VERSION_1_4;
+    return JNI_VERSION_1_6;
 }
 
 // 读取json配置文件
@@ -206,7 +197,7 @@ void toast(const char *msg)
     if (G_VM == NULL)
         return;
 
-    int status = G_VM->GetEnv((void **) &env, JNI_VERSION_1_4);
+    int status = G_VM->GetEnv((void **) &env, JNI_VERSION_1_6);
     if (status < 0)
     {
         attach = G_VM->AttachCurrentThread(&env, NULL);
