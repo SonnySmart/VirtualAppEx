@@ -16,7 +16,7 @@ extern "C" void hook_entry(const char *name, void *handle)
         return;
     }
 
-    //DUALLOGD("[+] [%s] name[%s]", __FUNCTION__, name);
+    DUALLOGD("[+] [%s] name[%s]", __FUNCTION__, name);
 
     if (!symbol)
     {

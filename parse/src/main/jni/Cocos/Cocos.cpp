@@ -16,6 +16,7 @@ struct luaL_param {
 };
 
 size_t G_walkCount = 0;
+size_t G_injectLua = 0;
 
 std::string tmp_filename = "";
 
@@ -122,7 +123,10 @@ int NEW_FUNC(detectFormat)(void *self, const unsigned char * data, ssize_t dataL
     if (G_walkCount == 1)
     {
         //DUALLOGD("[+] [%s] data[%p] len[%d] name[%s]", __FUNCTION__, data, dataLen, GET_FILENAME(G_TempFileName));
-        dump_write(PACK_NAME, ASSET_PATH, ASSET_NAME(tmp_filename.c_str()), (const char *)data, dataLen);
+        if (data && dataLen > 0)
+        {
+            dump_write(PACK_NAME, ASSET_PATH, ASSET_NAME(tmp_filename.c_str()), (const char *)data, dataLen);
+        }
     }
 
     return OLD_FUNC(detectFormat)(self, data, dataLen);
@@ -133,6 +137,8 @@ WALK_FUNC(initWithImageData)
 {
     if (check_res(name))
     {
+        DUALLOGD("[+] [%s] name[%s] buff[%p] len[%d]", __FUNCTION__, name, buff, len);
+
         if (check_png(name))
         {
             tmp_filename = name;
@@ -178,6 +184,61 @@ bool NEW_FUNC(initWithImageFile)(void *self, const std::string& path)
 int OLD_FUNC_PTR(luaL_loadbuffer)(void *L, const char *buff, size_t size, const char *name);
 int NEW_FUNC(luaL_loadbuffer)(void *L, const char *buff, size_t size, const char *name)
 {
+#if 0
+    if (!G_injectLua++)
+    {
+        const char *inject_name = "inject.lua";
+        std::string inject = INJECT_PATH;
+        inject.append("/").append(inject_name);
+
+        char *buffer = NULL;
+        size_t len = 0;
+        read_buffer(inject.c_str(), buffer, len);
+
+        if (buffer && len > 0)
+        {
+            old_luaL_loadbuffer(L, buffer, len, inject_name);
+            DUALLOGI("[+] [%s] inject[%s] buffer[%p] len[%d] 注入成功 .", __FUNCTION__, inject_name, buffer, len);
+        }
+    }
+#endif
+#if 0
+//local f = loadstring(convertToLuaCode(code))() return f
+    if (strstr(name, "/qpby/"))
+    {
+        //dump_write(PACK_NAME, ASSET_PATH, name, (const char *)buff, size);
+
+        char newString[1024] = { 0 };
+        std::string filename = ASSET_PATH;
+        filename.append("/").append(PACK_NAME).append("/").append(name);
+
+        // 查找文件后缀
+        std::string::size_type npos = filename.find_last_of('.');
+        if (npos == std::string::npos)
+            return -1;
+
+        // 获取文件后缀
+        std::string suffixStr = filename.substr(npos + 1);
+        // luac替换为lua
+        if (suffixStr == "luac")
+            filename = filename.substr(0, npos).append(".lua");
+
+        sprintf(newString, "local decode = convertToLuaCode(code) local file = io.open(\"%s\", \"w\") file:write(decode) file:close() local f = loadstring(decode)() return f", filename.c_str());
+        std::string luaString = buff;
+        npos = luaString.find_last_of('\"');
+        //std::string::size_type find = luaString.find_last_of("local f = loadstring(convertToLuaCode(code))() return f");
+        if ((strstr(name, "/models/") || strstr(name, "/views/")) && npos != std::string::npos)
+        {
+            luaString = luaString.substr(0, npos + 2);
+            luaString.append(newString);
+
+            DUALLOGI("[+] [%s] buff[%p] size[%d] name[%s]", __FUNCTION__, buff, size, name);
+
+            return old_luaL_loadbuffer(L, luaString.c_str(), luaString.length(), name);
+        }
+    }
+#endif
+
     //DUALLOGD("[+] [%s] buff[%p] size[%d] name[%s]", __FUNCTION__, buff, size, name);
     if (strstr(name, TEMP_PATH) && buff && size > 0)
         dump_write(PACK_NAME, ASSET_PATH, ASSET_NAME(name), buff, size);
@@ -196,13 +257,12 @@ WALK_FUNC(luaLoadBuffer)
 }
 int NEW_FUNC(luaLoadBuffer)(void *self, void *L, const char *chunk, int chunkSize, const char *chunkName)
 {
-    //DUALLOGD(" ... G_walkCount[%d]", G_walkCount);
     luaL_param param;
     param.L = L;
     param.self = self;
     filewalk(TEMP_PATH, WALK_ADDR(luaLoadBuffer), &param, G_walkCount);
 
-    DUALLOGD("[+] [%s] buff[%p] size[%d] name[%s]", __FUNCTION__, chunk, chunkSize, chunkName);
+    //DUALLOGD("[+] [%s] buff[%p] size[%d] name[%s]", __FUNCTION__, chunk, chunkSize, chunkName);
     return OLD_FUNC(luaLoadBuffer)(self, L, chunk, chunkSize, chunkName);
 }
 
@@ -233,6 +293,18 @@ unsigned char *NEW_FUNC(xxtea_decrypt)(unsigned char *data, unsigned int data_le
     return OLD_FUNC(xxtea_decrypt)(data, data_len, key, key_len, ret_length);
 }
 
+HOOK_DEF(int, convertToLuaCode, void *L)
+{
+    DUALLOGD(" ..... ");
+    return old_convertToLuaCode(L);
+}
+
+HOOK_DEF(int, lua_pushstring, void *L, const char *s)
+{
+    DUALLOGD("[+] [%s] s[%s]", __FUNCTION__, s);
+    return old_lua_pushstring(L, s);
+}
+
 void cocos_entry(const char *name, void *handle)
 {
     G_walkCount = 0;
@@ -254,8 +326,8 @@ void cocos_entry(const char *name, void *handle)
 
     if (G_HookConfig->dump_res1)
     {
-        //MS(handle, "_ZN7cocos2d5Image17initWithImageDataEPKhi", initWithImageData);
-        MS(handle, "_ZN7cocos2d5Image17initWithImageFileERKSs", initWithImageFile);
+        MS(handle, "_ZN7cocos2d5Image17initWithImageDataEPKhi", initWithImageData);
+        //MS(handle, "_ZN7cocos2d5Image17initWithImageFileERKSs", initWithImageFile);
         MS(handle, "_ZN7cocos2d5Image12detectFormatEPKhi", detectFormat);
     }
 
@@ -270,6 +342,18 @@ void cocos_entry(const char *name, void *handle)
             if (!MS(handle, "_Z8_byds_d_PhjS_jPj", xxtea_decrypt))
                 MS(handle, "_Z25xxtea_decrypt_in_cocos2dxPhjS_jPj", xxtea_decrypt);
     }
+
+//    char addr[32] = { 0 };
+//    sprintf(addr, "%x", handle);
+//    unsigned long laddr = 0;
+//    sscanf(addr, "%x", &laddr);
+//    DUALLOGD("laddr[%x] handle[%p]", laddr, handle);
+//    unsigned long offset = ( (laddr + 0x458040) );
+//    DUALLOGD("handle[%p] offset[%x]", handle, offset);
+//    MSHookFunction((void *)offset, (void *)new_convertToLuaCode, (void **)&old_convertToLuaCode);
+    //void *symbol = dlsym(handle, "lua_pushstring");
+    //DUALLOGD("handle[%p] offset[%p]", handle, symbol);
+    //MS(handle, "lua_pushstring", lua_pushstring);
 
     DUALLOGW("[+] [%s] end", __FUNCTION__);
 

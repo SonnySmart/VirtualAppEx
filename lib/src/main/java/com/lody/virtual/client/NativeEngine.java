@@ -34,8 +34,6 @@ public class NativeEngine {
     static {
         try {
             System.loadLibrary("va++");
-            //System.loadLibrary("whale");
-            System.loadLibrary("parse");
         } catch (Throwable e) {
             VLog.e(TAG, VLog.getStackTraceString(e));
         }
@@ -44,7 +42,6 @@ public class NativeEngine {
     static {
         NativeMethods.init();
     }
-
 
     public static void startDexOverride() {
         List<InstalledAppInfo> installedAppInfos = VirtualCore.get().getInstalledApps(0);

@@ -138,8 +138,9 @@ public class MainActivity extends Activity {
         registerReceiver(mBroadcastReceiver, intentFilter);
 
         //读取配置文件
+
+        GlobalConfig.readConfigFile();
         init();
-        readConfigFile();
     }
 
     @Override
@@ -230,7 +231,7 @@ public class MainActivity extends Activity {
             GlobalConfig.putString(GlobalConfig.Setting_Key_dump_res2, check_dump_res2.isChecked() ? "1" : "0");
             GlobalConfig.putString(GlobalConfig.Setting_Key_dump_xxtea, check_dump_xxtea.isChecked() ? "1" : "0");
             editor.commit();
-            writeSaveFile();
+            GlobalConfig.writeSaveFile();
             Toast.makeText(MainActivity.this, "保存设置成功", Toast.LENGTH_SHORT).show();
         } else {
             Toast.makeText(MainActivity.this, "请完整输入路径和包名", Toast.LENGTH_SHORT).show();
@@ -240,85 +241,13 @@ public class MainActivity extends Activity {
     void onClickStart() {
         String packageName = et_inject_pckname.getText().toString();
         PackageManager packageManager = getPackageManager();
-        Intent intent= new Intent();
+        Intent intent = new Intent();
         intent = packageManager.getLaunchIntentForPackage(packageName);
-        if(intent == null) {
+        if (intent == null) {
             Toast.makeText(MainActivity.this, "未安装", Toast.LENGTH_LONG).show();
         } else {
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(intent);
-        }
-    }
-
-/** 向 /sdcard/my_hookso.txt写入配置供注入的框架so读取
- *  第一行: 要注入的包名
- *  第二行: 要挂钩(Hook)的so名字,这里加载应用默认的库不需要完整路径,如果该应用采用其它方式加载则需要完整路径
- *  第三行: 实现实际hook功能的so,这个so里面包含了和框架so约定的导出函数
- */
-    void writeSaveFile() {
-        String sdStatus = Environment.getExternalStorageState();
-        if (!sdStatus.equals(Environment.MEDIA_MOUNTED)) {
-            Log.e(GlobalConfig.Log_TAG, "SD card is not avaiable/writeable right now.");
-            Toast.makeText(MainActivity.this, "SD card is not avaiable/writeable right now", Toast.LENGTH_SHORT);
-            return;
-        }
-        try {
-            String absoultPath = Environment.getExternalStorageDirectory() + File.separator + GlobalConfig.Setting_SaveFileName;
-            File file = new File(absoultPath);
-            if (!file.getParentFile().isDirectory()) {
-                file.getParentFile().mkdir();
-            }
-            if (file.exists()) {
-                file.delete();
-            }
-            Log.e(GlobalConfig.Log_TAG, "Create the file : " + absoultPath);
-            file.createNewFile();
-            FileOutputStream out = new FileOutputStream(file);
-            String json = null;
-            try {
-                json = GlobalConfig.getJson();
-                Log.d("myhook", json);
-            } catch (JSONException e) {
-                e.printStackTrace();
-                return;
-            }
-            byte[] buf = json.getBytes();
-            out.write(buf);
-            //close
-            out.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-            Log.e(GlobalConfig.Log_TAG, "write file failed!");
-        }
-    }
-
-    void readConfigFile()
-    {
-        String sdStatus = Environment.getExternalStorageState();
-        if (!sdStatus.equals(Environment.MEDIA_MOUNTED)) {
-            Log.e(GlobalConfig.Log_TAG, "SD card is not avaiable/writeable right now.");
-            Toast.makeText(MainActivity.this, "SD card is not avaiable/writeable right now", Toast.LENGTH_SHORT);
-            return;
-        }
-
-        try {
-            String absoultPath = Environment.getExternalStorageDirectory() + File.separator + GlobalConfig.Setting_SaveFileName;
-            File file = new File(absoultPath);
-            if (!file.exists()) {
-                return;
-            }
-
-            String json = FileUtils.readFile(absoultPath);
-            Log.d("myhook", json);
-
-            GlobalConfig.commit(json);
-
-            init();
-        }
-        catch (IOException e) {
-            e.printStackTrace();
-        } catch (JSONException e) {
-            e.printStackTrace();
         }
     }
 

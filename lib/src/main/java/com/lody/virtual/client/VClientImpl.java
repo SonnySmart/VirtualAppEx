@@ -326,6 +326,15 @@ public final class VClientImpl extends IVClient.Stub {
             lock.open();
             mTempLock = null;
         }
+
+        // hook
+        try {
+            com.res.parse.Native.tryHook(processName, context);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        // 启动callApplicationOnCreate
         VirtualCore.get().getComponentDelegate().beforeApplicationCreate(mInitialApplication);
         try {
             mInstrumentation.callApplicationOnCreate(mInitialApplication);

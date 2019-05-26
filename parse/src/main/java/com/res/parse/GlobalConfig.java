@@ -1,9 +1,16 @@
 package com.res.parse;
 
 import android.content.SharedPreferences;
+import android.os.Environment;
+import android.util.Log;
+import android.widget.Toast;
 
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 
 /**
  * Created by beichen on 8/31 0031.
@@ -31,10 +38,18 @@ public class GlobalConfig {
     public static SharedPreferences mSharePreferences;
     public static SharedPreferences.Editor editor;
 
-    public static void init(SharedPreferences sharedPreferences)
+    public static boolean init(SharedPreferences sharedPreferences)
     {
+        if (sharedPreferences == null)
+            return false;
+
+        if (sharedPreferences.equals(mSharePreferences))
+            return false;
+
         mSharePreferences = sharedPreferences;
         editor = mSharePreferences.edit();
+
+        return true;
     }
 
     public static String getString(String key, String defValue)
@@ -75,5 +90,77 @@ public class GlobalConfig {
         putString(Setting_Key_dump_res2, object.getString(Setting_Key_dump_res2));
         putString(Setting_Key_dump_xxtea, object.getString(Setting_Key_dump_xxtea));
         editor.commit();
+    }
+
+    public static boolean readConfigFile()
+    {
+        String sdStatus = Environment.getExternalStorageState();
+        if (!sdStatus.equals(Environment.MEDIA_MOUNTED)) {
+            Log.e(GlobalConfig.Log_TAG, "SD card is not avaiable/writeable right now.");
+            return false;
+        }
+
+        try {
+            String absoultPath = Environment.getExternalStorageDirectory() + File.separator + GlobalConfig.Setting_SaveFileName;
+            File file = new File(absoultPath);
+            if (!file.exists()) {
+                return false;
+            }
+
+            String json = FileUtils.readFile(absoultPath);
+            //Log.d("myhook", json);
+
+            GlobalConfig.commit(json);
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        } catch (JSONException e) {
+            e.printStackTrace();
+            return false;
+        }
+
+        return true;
+    }
+
+    /** 向 /sdcard/my_hookso.txt写入配置供注入的框架so读取
+     *  第一行: 要注入的包名
+     *  第二行: 要挂钩(Hook)的so名字,这里加载应用默认的库不需要完整路径,如果该应用采用其它方式加载则需要完整路径
+     *  第三行: 实现实际hook功能的so,这个so里面包含了和框架so约定的导出函数
+     */
+    public static void writeSaveFile() {
+        String sdStatus = Environment.getExternalStorageState();
+        if (!sdStatus.equals(Environment.MEDIA_MOUNTED)) {
+            Log.e(GlobalConfig.Log_TAG, "SD card is not avaiable/writeable right now.");
+            return;
+        }
+        try {
+            String absoultPath = Environment.getExternalStorageDirectory() + File.separator + GlobalConfig.Setting_SaveFileName;
+            File file = new File(absoultPath);
+            if (!file.getParentFile().isDirectory()) {
+                file.getParentFile().mkdir();
+            }
+            if (file.exists()) {
+                file.delete();
+            }
+            Log.e(GlobalConfig.Log_TAG, "Create the file : " + absoultPath);
+            file.createNewFile();
+            FileOutputStream out = new FileOutputStream(file);
+            String json = null;
+            try {
+                json = GlobalConfig.getJson();
+                Log.d("myhook", json);
+            } catch (JSONException e) {
+                e.printStackTrace();
+                return;
+            }
+            byte[] buf = json.getBytes();
+            out.write(buf);
+            //close
+            out.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+            Log.e(GlobalConfig.Log_TAG, "write file failed!");
+        }
     }
 }

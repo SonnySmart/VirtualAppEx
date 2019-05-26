@@ -298,10 +298,6 @@ bool inline_hook(void *handle, const char *symbol_name, void *replace, void **re
         return false;
     }
 
-//    void *symbol = NULL;
-//    if (findSymbol(symbol_name, libname, (unsigned long *)&symbol) != 0)
-//        return false;
-
 #if WHALE
     G_WInlineHookFunction(symbol, replace, result);
 #else
