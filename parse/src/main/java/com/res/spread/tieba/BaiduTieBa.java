@@ -1,20 +1,22 @@
 package com.res.spread.tieba;
 
-import android.content.Context;
 import android.os.Bundle;
 import android.util.Log;
 
+import com.lody.whale.xposed.IXposedHookLoadPackage;
 import com.lody.whale.xposed.XC_MethodReplacement;
 import com.lody.whale.xposed.XposedBridge;
 import com.lody.whale.xposed.XposedHelpers;
-import com.res.spread.ISpreadHook;
+import com.lody.whale.xposed.callbacks.XC_LoadPackage;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.LinkedList;
 
-public class BaiduTieBa extends ISpreadHook implements Runnable {
+public class BaiduTieBa implements IXposedHookLoadPackage, Runnable {
+
+    final static String TAG = "myhook";
 
     static ClassLoader classLoader = null;
 
@@ -114,8 +116,8 @@ public class BaiduTieBa extends ISpreadHook implements Runnable {
     }
 
     @Override
-    public void execute(String processName, Context context) {
-        classLoader = context.getClassLoader();
+    public void handleLoadPackage(XC_LoadPackage.LoadPackageParam lpparam) throws Throwable {
+        classLoader = lpparam.classLoader;
 
         mUserMap.clear();
 
@@ -201,6 +203,8 @@ public class BaiduTieBa extends ISpreadHook implements Runnable {
                         return null;
                     }
                 });
+
+        Log.d(TAG, "handleLoadPackage: ok ..... ");
 
         //启动发送线程
         new Thread(this).start();

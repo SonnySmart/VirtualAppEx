@@ -50,6 +50,9 @@ import com.lody.virtual.os.VUserHandle;
 import com.lody.virtual.remote.InstalledAppInfo;
 import com.lody.virtual.remote.PendingResultData;
 import com.lody.virtual.remote.VDeviceInfo;
+import com.lody.whale.xposed.IXposedHookLoadPackage;
+import com.lody.whale.xposed.XposedBridge;
+import com.lody.whale.xposed.callbacks.XC_LoadPackage;
 
 import java.io.File;
 import java.lang.reflect.Field;
@@ -327,11 +330,32 @@ public final class VClientImpl extends IVClient.Stub {
             mTempLock = null;
         }
 
-        // hook
+        // 启动xposed插件
+        Class<?> clz = null;
         try {
-            com.res.parse.Native.tryHook(processName, context);
-        } catch (Exception e) {
-            e.printStackTrace();
+            clz = Class.forName("com.res.parse.Native");
+        } catch (ClassNotFoundException e) {
+            VLog.e(TAG, VLog.getStackTraceString(e));
+        }
+
+        if (clz != null)
+        {
+            XposedBridge.CopyOnWriteSortedSet<XC_LoadPackage> sLoadedPackageCallbacks = new XposedBridge.CopyOnWriteSortedSet<>();
+            try {
+                sLoadedPackageCallbacks.add(new IXposedHookLoadPackage.Wrapper((IXposedHookLoadPackage) clz.newInstance()));
+            } catch (InstantiationException e) {
+                VLog.e(TAG, VLog.getStackTraceString(e));
+            } catch (IllegalAccessException e) {
+                VLog.e(TAG, VLog.getStackTraceString(e));
+            }
+            XC_LoadPackage.LoadPackageParam lpparam = new XC_LoadPackage.LoadPackageParam(sLoadedPackageCallbacks);
+            lpparam.packageName = packageName;
+            lpparam.processName = processName;
+            lpparam.classLoader = context.getClassLoader();
+            lpparam.context = context;
+            lpparam.appInfo = null;
+            lpparam.isFirstApplication = true;
+            XC_LoadPackage.callAll(lpparam);
         }
 
         // 启动callApplicationOnCreate

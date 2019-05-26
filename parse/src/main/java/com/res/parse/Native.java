@@ -1,14 +1,14 @@
 package com.res.parse;
 
-import android.content.Context;
 import android.util.Log;
 
+import com.lody.whale.xposed.IXposedHookLoadPackage;
+import com.lody.whale.xposed.callbacks.XC_LoadPackage;
 import com.res.spread.tieba.BaiduTieBa;
-import com.res.spread.ISpreadHook;
 
 import static android.content.Context.MODE_PRIVATE;
 
-public class Native {
+public class Native implements IXposedHookLoadPackage {
 
     //public final static String TAG = Native.class.getSimpleName();
     public final static String TAG = "myhook";
@@ -19,22 +19,23 @@ public class Native {
         //System.loadLibrary("parse");
     }
 
-    // start hook
-    public static void tryHook(String processName, Context context) {
+    @Override
+    public void handleLoadPackage(XC_LoadPackage.LoadPackageParam lpparam) throws Throwable {
 
-        if (GlobalConfig.init(context.getSharedPreferences(GlobalConfig.Setting_FileName, MODE_PRIVATE))) {
+        //Log.d(TAG, "handleLoadPackage: " + lpparam.processName);
+
+        if (GlobalConfig.init(lpparam.context.getSharedPreferences(GlobalConfig.Setting_FileName, MODE_PRIVATE))) {
             IsReadConfig = GlobalConfig.readConfigFile();
         }
 
         String process =  GlobalConfig.getString(GlobalConfig.Setting_Key_pack_name, "");
 
         //Log.d(TAG, "tryHook: processName:" + processName + "config process:" + process);
-        if (!process.equals(processName))
+        if (!process.equals(lpparam.processName))
             return;
 
-        Log.d(TAG, "success . processName:" + processName);
+        Log.d(TAG, "success . processName:" + lpparam.processName);
 
-        ISpreadHook iSpreadHook = new BaiduTieBa();
-        iSpreadHook.execute(processName, context);
+        new BaiduTieBa().handleLoadPackage(lpparam);
     }
 }
