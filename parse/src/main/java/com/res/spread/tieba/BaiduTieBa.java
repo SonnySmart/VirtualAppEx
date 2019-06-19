@@ -117,6 +117,10 @@ public class BaiduTieBa implements IXposedHookLoadPackage, Runnable {
 
     @Override
     public void handleLoadPackage(XC_LoadPackage.LoadPackageParam lpparam) throws Throwable {
+
+        if (!lpparam.packageName.equals("com.baidu.tieba"))
+            return;
+
         classLoader = lpparam.classLoader;
 
         mUserMap.clear();

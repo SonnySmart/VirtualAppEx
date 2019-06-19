@@ -5,6 +5,7 @@ import android.util.Log;
 import com.lody.whale.xposed.IXposedHookLoadPackage;
 import com.lody.whale.xposed.callbacks.XC_LoadPackage;
 import com.res.spread.tieba.BaiduTieBa;
+import com.res.spread.toutiao.JinRiTouTiao;
 
 import static android.content.Context.MODE_PRIVATE;
 
@@ -34,8 +35,11 @@ public class Native implements IXposedHookLoadPackage {
         if (!process.equals(lpparam.processName))
             return;
 
-        Log.d(TAG, "success . processName:" + lpparam.processName);
+        System.loadLibrary("parse");
+
+        Log.d(TAG, "inject success . processName:" + lpparam.processName);
 
         new BaiduTieBa().handleLoadPackage(lpparam);
+        new JinRiTouTiao().handleLoadPackage(lpparam);
     }
 }

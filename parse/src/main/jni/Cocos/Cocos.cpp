@@ -293,18 +293,6 @@ unsigned char *NEW_FUNC(xxtea_decrypt)(unsigned char *data, unsigned int data_le
     return OLD_FUNC(xxtea_decrypt)(data, data_len, key, key_len, ret_length);
 }
 
-HOOK_DEF(int, convertToLuaCode, void *L)
-{
-    DUALLOGD(" ..... ");
-    return old_convertToLuaCode(L);
-}
-
-HOOK_DEF(int, lua_pushstring, void *L, const char *s)
-{
-    DUALLOGD("[+] [%s] s[%s]", __FUNCTION__, s);
-    return old_lua_pushstring(L, s);
-}
-
 void cocos_entry(const char *name, void *handle)
 {
     G_walkCount = 0;
@@ -333,7 +321,8 @@ void cocos_entry(const char *name, void *handle)
 
     if (G_HookConfig->dump_res2)
     {
-        MS(handle, "_ZN7cocos2d16FileUtilsAndroid15getDataFromFileERKSs", getDataFromFile);
+        if (!MS(handle, "_ZN7cocos2d16FileUtilsAndroid15getDataFromFileERKSs", getDataFromFile))
+            MS(handle, "_ZN7cocos2d9FileUtils15getDataFromFileERKSs", getDataFromFile);
     }
 
     if (G_HookConfig->dump_xxtea)
@@ -342,18 +331,6 @@ void cocos_entry(const char *name, void *handle)
             if (!MS(handle, "_Z8_byds_d_PhjS_jPj", xxtea_decrypt))
                 MS(handle, "_Z25xxtea_decrypt_in_cocos2dxPhjS_jPj", xxtea_decrypt);
     }
-
-//    char addr[32] = { 0 };
-//    sprintf(addr, "%x", handle);
-//    unsigned long laddr = 0;
-//    sscanf(addr, "%x", &laddr);
-//    DUALLOGD("laddr[%x] handle[%p]", laddr, handle);
-//    unsigned long offset = ( (laddr + 0x458040) );
-//    DUALLOGD("handle[%p] offset[%x]", handle, offset);
-//    MSHookFunction((void *)offset, (void *)new_convertToLuaCode, (void **)&old_convertToLuaCode);
-    //void *symbol = dlsym(handle, "lua_pushstring");
-    //DUALLOGD("handle[%p] offset[%p]", handle, symbol);
-    //MS(handle, "lua_pushstring", lua_pushstring);
 
     DUALLOGW("[+] [%s] end", __FUNCTION__);
 

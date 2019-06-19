@@ -131,7 +131,11 @@ public class MainActivity extends Activity {
 
         initSpinnerHookSoName();
 
-        tv_help.setText("帮助:\n" + "/sdcard/myhook/tmp为加密资源存放路径\n");
+        tv_help.setText("帮助:\n" +
+                "1. /sdcard/myhook/config.json 为配置文件，误删！！！\n" +
+                "2. /sdcard/myhook/tmp 为加密文件路径，拷贝加密文件进这个目录(cocos热更新下载目录一般为 /data/data/包名/files/ 需要吧加密文件拷贝进/sdcard/myhook/tmp)\n" +
+                "3. /sdcard/myhook/Cocos2dAsset/包名/ 为解密文件路径，解密完成去这个目录拷贝文件\n" +
+                "4. 选择注入包名，选择注入so之后 '保存配置' 即可，从VirtualAppEx程序列表启动app，程序会黑屏一段时间正常现象，出现游戏界面说明解密完成了。");
 
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(PACKAGE_NAME_CMD);

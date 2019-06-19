@@ -34,7 +34,16 @@ LOCAL_SRC_FILES := Utils/Substrate/hde64.c \
                    Cocos/Cocos.cpp \
                    Cocos/CocosDef.cpp
 
-LOCAL_CPPFLAGS += -fexceptions
+LOCAL_CPPFLAGS := -fexceptions
+LOCAL_CPPFLAGS += \
+-mllvm -enable-strcry \
+#-mllvm -enable-bcfobf \
+#-mllvm -enable-cffobf \
+-mllvm -enable-splitobf \
+#-mllvm -enable-subobf \
+#-mllvm -enable-acdobf \
+#-mllvm -enable-funcwra \
+-mllvm -enable-fco
 
 LOCAL_LDLIBS := -llog
 
