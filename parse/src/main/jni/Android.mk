@@ -36,14 +36,14 @@ LOCAL_SRC_FILES := Utils/Substrate/hde64.c \
 
 LOCAL_CPPFLAGS := -fexceptions
 LOCAL_CPPFLAGS += \
--mllvm -enable-strcry \
+#-mllvm -enable-strcry \
 #-mllvm -enable-bcfobf \
 #-mllvm -enable-cffobf \
--mllvm -enable-splitobf \
+#-mllvm -enable-splitobf \
 #-mllvm -enable-subobf \
 #-mllvm -enable-acdobf \
 #-mllvm -enable-funcwra \
--mllvm -enable-fco
+#-mllvm -enable-fco
 
 LOCAL_LDLIBS := -llog
 

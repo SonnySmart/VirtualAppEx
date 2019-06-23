@@ -15,7 +15,7 @@ extern "C" bool loadConfig();
 extern "C" void hook_entry(const char *name, void *handle);
 
 void onSoLoaded(const char *name, void *handle) {
-    //ALOGD("[+] [%s] name[%s] handle[%p]", __FUNCTION__, name, handle);
+    ALOGD("[+] [%s] name[%s] handle[%p]", __FUNCTION__, name, handle);
 
     // so名称包含了包名 && hook名
     if (strstr(name, PACK_NAME) && strstr(name, HOOK_NAME))

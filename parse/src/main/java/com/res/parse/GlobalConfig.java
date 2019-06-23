@@ -29,6 +29,7 @@ public class GlobalConfig {
     public static String Setting_Key_dump_res1 = "dump_res1";
     public static String Setting_Key_dump_res2 = "dump_res2";
     public static String Setting_Key_dump_xxtea = "dump_xxtea";
+    public static String Setting_Key_send_msg = "send_msg";
 
     public static String Current_PackageName = "com.res.parse";         //当前的包名,供Xposed读取配置用
     public static String Log_TAG = "TestInject";
@@ -68,6 +69,7 @@ public class GlobalConfig {
         object.put(Setting_Key_dump_res1, getString(Setting_Key_dump_res1, ""));
         object.put(Setting_Key_dump_res2, getString(Setting_Key_dump_res2, ""));
         object.put(Setting_Key_dump_xxtea, getString(Setting_Key_dump_xxtea, ""));
+        object.put(Setting_Key_send_msg, getString(Setting_Key_send_msg, ""));
         return object.toString();
     }
 
@@ -89,6 +91,7 @@ public class GlobalConfig {
         putString(Setting_Key_dump_res1, object.getString(Setting_Key_dump_res1));
         putString(Setting_Key_dump_res2, object.getString(Setting_Key_dump_res2));
         putString(Setting_Key_dump_xxtea, object.getString(Setting_Key_dump_xxtea));
+        putString(Setting_Key_send_msg, object.getString(Setting_Key_send_msg));
         editor.commit();
     }
 
@@ -162,5 +165,9 @@ public class GlobalConfig {
             e.printStackTrace();
             Log.e(GlobalConfig.Log_TAG, "write file failed!");
         }
+    }
+
+    public static String getSendMessage() {
+        return getString(Setting_Key_send_msg, "");
     }
 }

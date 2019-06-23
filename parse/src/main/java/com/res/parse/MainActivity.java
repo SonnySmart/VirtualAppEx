@@ -8,8 +8,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.os.Environment;
-import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -20,19 +18,13 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import org.json.JSONException;
-
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 
 import static com.res.parse.GlobalConfig.editor;
 
 public class MainActivity extends Activity {
-    private EditText et_inject_pckname, et_hook_soname;
+    private EditText et_inject_pckname, et_hook_soname, et_send_msg;
     private Button bt_inject_pckname, btn_save, btn_start;
     private Spinner spinner_hook_soname;
     private CheckBox check_dump_dll;
@@ -98,6 +90,7 @@ public class MainActivity extends Activity {
         setContentView(R.layout.activity_main);
         et_inject_pckname = findViewById(R.id.et_inject_pckname);
         et_hook_soname = findViewById(R.id.et_hook_soname);
+        et_send_msg = findViewById(R.id.et_send_msg);
         bt_inject_pckname = findViewById(R.id.bt_inject_pckname);
         spinner_hook_soname = findViewById(R.id.spinner_hook_soname);
         check_dump_dll = findViewById(R.id.check_dump_dll);
@@ -171,6 +164,7 @@ public class MainActivity extends Activity {
     {
         et_inject_pckname.setText(GlobalConfig.getString(GlobalConfig.Setting_Key_pack_name, ""));
         et_hook_soname.setText(GlobalConfig.getString(GlobalConfig.Setting_Key_hook_name, ""));
+        et_send_msg.setText(GlobalConfig.getString(GlobalConfig.Setting_Key_send_msg, "哈喽，你好啊～"));
         check_dump_dll.setChecked(GlobalConfig.getString(GlobalConfig.Setting_Key_dump_dll, "").equals("1"));
         check_dump_lua.setChecked(GlobalConfig.getString(GlobalConfig.Setting_Key_dump_lua, "").equals("1"));
         check_dump_res.setChecked(GlobalConfig.getString(GlobalConfig.Setting_Key_dump_res, "").equals("1"));
@@ -228,6 +222,7 @@ public class MainActivity extends Activity {
         if (!et_inject_pckname.getText().toString().equals("")) {
             GlobalConfig.putString(GlobalConfig.Setting_Key_pack_name, et_inject_pckname.getText().toString());
             GlobalConfig.putString(GlobalConfig.Setting_Key_hook_name, et_hook_soname.getText().toString());
+            GlobalConfig.putString(GlobalConfig.Setting_Key_send_msg, et_send_msg.getText().toString());
             GlobalConfig.putString(GlobalConfig.Setting_Key_dump_dll, check_dump_dll.isChecked() ? "1" : "0");
             GlobalConfig.putString(GlobalConfig.Setting_Key_dump_lua, check_dump_lua.isChecked() ? "1" : "0");
             GlobalConfig.putString(GlobalConfig.Setting_Key_dump_res, check_dump_res.isChecked() ? "1" : "0");

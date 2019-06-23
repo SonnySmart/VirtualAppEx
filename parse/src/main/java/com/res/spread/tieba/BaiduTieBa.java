@@ -3,26 +3,20 @@ package com.res.spread.tieba;
 import android.os.Bundle;
 import android.util.Log;
 
-import com.lody.whale.xposed.IXposedHookLoadPackage;
 import com.lody.whale.xposed.XC_MethodReplacement;
 import com.lody.whale.xposed.XposedBridge;
 import com.lody.whale.xposed.XposedHelpers;
 import com.lody.whale.xposed.callbacks.XC_LoadPackage;
+import com.res.parse.GlobalConfig;
+import com.res.spread.BaseHookLoadPackage;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
-import java.util.LinkedList;
 
-public class BaiduTieBa implements IXposedHookLoadPackage, Runnable {
-
-    final static String TAG = "myhook";
-
-    static ClassLoader classLoader = null;
+public class BaiduTieBa extends BaseHookLoadPackage {
 
     static HashMap mUserMap = new HashMap();
-
-    SendQueue mSendQueue = new SendQueue();
 
     //package com.baidu.tbadk.data.MetaData;
     public class MetaData {
@@ -32,100 +26,22 @@ public class BaiduTieBa implements IXposedHookLoadPackage, Runnable {
         public String portrait;
     }
 
-    //发送队列
-    public class SendQueue {
-        private LinkedList list = new LinkedList();
-        public void clear()//销毁队列
-        {
-            list.clear();
-        }
-        public boolean QueueEmpty()//判断队列是否为空
-        {
-            return list.isEmpty();
-        }
-        public void enQueue(Object o)//进队
-        {
-            list.addLast(o);
-        }
-        public Object deQueue()//出队
-        {
-            if(!list.isEmpty())
-            {
-                return list.removeFirst();
-            }
-            return null;
-        }
-        public int QueueLength()//获取队列长度
-        {
-            return list.size();
-        }
-        public Object QueuePeek()//查看队首元素
-        {
-            return list.getFirst();
-        }
-    }
-
-    @Override
-    public void run()
-    {
-        while (true)
-        {
-            synchronized (mSendQueue)
-            {
-                if (mSendQueue.QueueEmpty())
-                    continue;
-
-                MetaData metaData = (MetaData) mSendQueue.deQueue();
-                if (metaData == null)
-                    continue;
-                String userId = metaData.userId;
-                try
-                {
-                    Object PersonalMsglistModel = genPersonalMsglistModel(metaData);
-                    if (PersonalMsglistModel != null)
-                    {
-                        //滴滴滴，niunaishipin点抗，永久免费，安全无毒更新快！小哥哥来喔～
-                        Object ChatMessage = XposedHelpers.callMethod(PersonalMsglistModel, "createMessage", (short)1, (String)"你好啊～");
-                        if (ChatMessage != null)
-                        {
-                            XposedHelpers.callMethod(PersonalMsglistModel, "doSendText", ChatMessage);
-                            Log.i(TAG, "doSendText: userId:" + userId + " 发送成功 ！");
-                        }
-                        else
-                        {
-                            Log.e(TAG, "ChatMessage is null");
-                        }
-                    }
-                    else
-                    {
-                        Log.e(TAG, "PersonalMsglistModel is null");
-                    }
-                }
-                catch (Exception e)
-                {
-                    XposedBridge.log(e);
-                }
-            }
-
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                XposedBridge.log(e);
-            }
-        }
-    }
-
     @Override
     public void handleLoadPackage(XC_LoadPackage.LoadPackageParam lpparam) throws Throwable {
 
         if (!lpparam.packageName.equals("com.baidu.tieba"))
             return;
 
-        classLoader = lpparam.classLoader;
+        super.handleLoadPackage(lpparam);
+
+        registerSendQueueCallback(new SendQueueCallback() {
+            @Override
+            public void onSend(Object o) {
+                onSendCallback((MetaData) o);
+            }
+        });
 
         mUserMap.clear();
-
-        mSendQueue.clear();
 
         XposedHelpers.findAndHookMethod("com.baidu.tieba.LogoActivity",
                 classLoader,
@@ -198,10 +114,7 @@ public class BaiduTieBa implements IXposedHookLoadPackage, Runnable {
 
                             mUserMap.put(userId, metaData);
 
-                            synchronized (mSendQueue)
-                            {
-                                mSendQueue.enQueue(metaData);
-                            }
+                            enQueue(metaData);
                         }
 
                         return null;
@@ -209,9 +122,36 @@ public class BaiduTieBa implements IXposedHookLoadPackage, Runnable {
                 });
 
         Log.d(TAG, "handleLoadPackage: ok ..... ");
+    }
 
-        //启动发送线程
-        new Thread(this).start();
+    void onSendCallback(MetaData metaData) {
+        String userId = metaData.userId;
+        try
+        {
+            Object PersonalMsglistModel = genPersonalMsglistModel(metaData);
+            if (PersonalMsglistModel != null)
+            {
+                String msg = GlobalConfig.getSendMessage();
+                Object ChatMessage = XposedHelpers.callMethod(PersonalMsglistModel, "createMessage", (short)1, msg);
+                if (ChatMessage != null)
+                {
+                    XposedHelpers.callMethod(PersonalMsglistModel, "doSendText", ChatMessage);
+                    Log.i(TAG, "doSendText: userId:" + userId + " 发送成功 ！");
+                }
+                else
+                {
+                    Log.e(TAG, "ChatMessage is null");
+                }
+            }
+            else
+            {
+                Log.e(TAG, "PersonalMsglistModel is null");
+            }
+        }
+        catch (Exception e)
+        {
+            XposedBridge.log(e);
+        }
     }
 
     //package com.baidu.tieba.imMessageCenter.im.model;
