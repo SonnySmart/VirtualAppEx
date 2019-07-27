@@ -11,6 +11,7 @@ import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.res.app.ApkTool;
 import com.res.app.MyAppInfo;
@@ -100,10 +101,7 @@ public class AppActivity extends Activity {
                     @Override
                     public void onClick(View v) {
                         String appName = (String) ((TextView)v.findViewById(R.id.tv_app_name)).getText();
-                        Intent intent = new Intent();
-                        intent.setAction(MainActivity.PACKAGE_NAME_CMD);
-                        intent.putExtra(MainActivity.PACKAGE_NAME_CMD, appName);
-                        AppActivity.this.sendBroadcast(intent);
+                        MainActivity.Instance.setPackageString(appName);
                         //Toast.makeText(getApplicationContext(), appName, Toast.LENGTH_LONG).show();
                         AppActivity.this.finish();
                     }

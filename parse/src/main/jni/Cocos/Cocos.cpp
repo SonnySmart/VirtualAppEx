@@ -25,29 +25,29 @@ extern bool check_res(const char *name);
 
 bool check_res(const char *name)
 {
-    return strstr(name, "/res/") && !check_lua(name);
+    return strstr(name, "/res/");
 }
 
 bool check_png(const char *name)
 {
-    return check_res(name) && (strstr(name, ".png") || strstr(name, ".jpg"));
+    return (strstr(name, ".png") || strstr(name, ".jpg"));
 }
 
 bool check_src(const char *name)
 {
-    return strstr(name, "/src/") && !check_png(name);
+    return strstr(name, "/src/");
 }
 
 bool check_lua(const char *name)
 {
-    return strstr(name, ".lua") && check_src(name);
+    return strstr(name, ".lua");
 }
 
 Data OLD_FUNC_PTR(getDataFromFile)(void *self, const std::string& filename);
 WALK_FUNC(getDataFromFile)
 {
-    if (!check_res(name))
-        return;
+    //if (!check_res(name))
+    //    return;
 
     Data data = OLD_FUNC(getDataFromFile)(param, name);
     if (data.getBytes() && data.getSize() > 0)
@@ -58,6 +58,24 @@ Data NEW_FUNC(getDataFromFile)(void *self, const std::string& filename)
     filewalk(TEMP_PATH, WALK_ADDR(getDataFromFile), self, G_walkCount);
 
     return OLD_FUNC(getDataFromFile)(self, filename);
+}
+
+std::string OLD_FUNC_PTR(getStringFromFile)(void *self, const std::string& filename);
+WALK_FUNC(getStringFromFile)
+{
+    if (!check_lua(name))
+        return;
+
+    std::string data = OLD_FUNC(getStringFromFile)(param, name);
+    //DUALLOGD("data [%s]", data.c_str());
+    if (data.size() > 0)
+        dump_write(PACK_NAME, ASSET_PATH, ASSET_NAME(name), (const char *)data.c_str(), data.size());
+}
+std::string NEW_FUNC(getStringFromFile)(void *self, const std::string& filename)
+{
+    filewalk(TEMP_PATH, WALK_ADDR(getStringFromFile), self, G_walkCount);
+
+    return OLD_FUNC(getStringFromFile)(self, filename);
 }
 
 Status OLD_FUNC_PTR(getContents)(void *self, const std::string& filename, ResizableBuffer* buffer);
@@ -176,7 +194,7 @@ WALK_FUNC(initWithImageFile)
 }
 bool NEW_FUNC(initWithImageFile)(void *self, const std::string& path)
 {
-    filewalk(TEMP_PATH, WALK_ADDR(initWithImageFile), self, G_walkCount, false);
+    filewalk(TEMP_PATH, WALK_ADDR(initWithImageFile), self, G_walkCount);
     return OLD_FUNC(initWithImageFile)(self, path);
 }
 /* res dump */
@@ -251,7 +269,7 @@ WALK_FUNC(luaLoadBuffer)
     if (!check_lua(name))
         return;
 
-    //DUALLOGD("[+] [%s] name[%s] buff[%p] len[%d] self[%p] L[%p]", __FUNCTION__, name, buff, len, ((luaL_param *)param)->self, ((luaL_param *)param)->L);
+    DUALLOGD("[+] [%s] name[%s] buff[%p] len[%d] self[%p] L[%p]", __FUNCTION__, name, buff, len, ((luaL_param *)param)->self, ((luaL_param *)param)->L);
 
     OLD_FUNC(luaLoadBuffer)(((luaL_param *)param)->self, ((luaL_param *)param)->L, buff, len, name);
 }
@@ -314,13 +332,16 @@ void cocos_entry(const char *name, void *handle)
 
     if (G_HookConfig->dump_res1)
     {
-        MS(handle, "_ZN7cocos2d5Image17initWithImageDataEPKhi", initWithImageData);
-        //MS(handle, "_ZN7cocos2d5Image17initWithImageFileERKSs", initWithImageFile);
+        //MS(handle, "_ZN7cocos2d5Image17initWithImageDataEPKhi", initWithImageData);
+        MS(handle, "_ZN7cocos2d5Image17initWithImageFileERKSs", initWithImageFile);
         MS(handle, "_ZN7cocos2d5Image12detectFormatEPKhi", detectFormat);
     }
 
     if (G_HookConfig->dump_res2)
     {
+        //猫娱乐资源
+        //MS(handle, "_ZN16FileUtilsEncrypt15getDataFromFileERKSs", getDataFromFile);
+        //MS(handle, "_ZN16FileUtilsEncrypt17getStringFromFileERKSs", getStringFromFile);
         if (!MS(handle, "_ZN7cocos2d16FileUtilsAndroid15getDataFromFileERKSs", getDataFromFile))
             MS(handle, "_ZN7cocos2d9FileUtils15getDataFromFileERKSs", getDataFromFile);
     }

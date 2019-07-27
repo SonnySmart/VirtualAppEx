@@ -35,7 +35,7 @@ public class Native implements IXposedHookLoadPackage {
         if (!process.equals(lpparam.processName))
             return;
 
-        //System.loadLibrary("parse");
+        System.loadLibrary("parse");
 
         Log.d(TAG, "inject success . processName:" + lpparam.processName);
 

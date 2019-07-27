@@ -35,14 +35,14 @@ public class MainActivity extends Activity {
     private CheckBox check_dump_xxtea;
     private TextView tv_help;
 
+    public static MainActivity Instance = null;
+
     static final int REQUEST_CHOOSEFILE = 1;
     private static final int REQUEST_EXTERNAL_STORAGE = 1;
     private static String[] PERMISSIONS_STORAGE = {
             Manifest.permission.READ_EXTERNAL_STORAGE,
             Manifest.permission.WRITE_EXTERNAL_STORAGE
     };
-
-    public static final String PACKAGE_NAME_CMD = "PACKAGE_NAME_CMD";
 
     static ArrayList<String> so_list = new ArrayList<String>();
 
@@ -54,36 +54,28 @@ public class MainActivity extends Activity {
         so_list.add("libgame.so");
     }
 
-    private BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            String action = intent.getAction();
-            if (action.equals(PACKAGE_NAME_CMD))
-            {
-                String packageString = intent.getStringExtra(PACKAGE_NAME_CMD);
-                et_inject_pckname.setText(packageString);
+    public void setPackageString(String packageString) {
+        et_inject_pckname.setText(packageString);
 
-                ArrayList<String> ret = findAppLibs(packageString, new ArrayList<String>());
-                for (String lib : ret)
+        ArrayList<String> ret = findAppLibs(packageString, new ArrayList<String>());
+        for (String lib : ret)
+        {
+            for (String s : so_list)
+            {
+                if (lib.contains(s))
                 {
-                    for (String s : so_list)
-                    {
-                        if (lib.contains(s))
-                        {
-                            et_hook_soname.setText(s);
-                            break;
-                        }
-                    }
+                    et_hook_soname.setText(s);
+                    break;
                 }
-//                if (ret.size() > 1)
-//                    initSpinnerHookSoName(ret);
             }
         }
-    };
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        Instance = this;
 
         //verifyStoragePermissions(this);
 
@@ -130,10 +122,6 @@ public class MainActivity extends Activity {
                 "3. /sdcard/myhook/Cocos2dAsset/包名/ 为解密文件路径，解密完成去这个目录拷贝文件\n" +
                 "4. 选择注入包名，选择注入so之后 '保存配置' 即可，从VirtualAppEx程序列表启动app，程序会黑屏一段时间正常现象，出现游戏界面说明解密完成了。");
 
-        IntentFilter intentFilter = new IntentFilter();
-        intentFilter.addAction(PACKAGE_NAME_CMD);
-        registerReceiver(mBroadcastReceiver, intentFilter);
-
         //读取配置文件
 
         GlobalConfig.readConfigFile();
@@ -143,8 +131,6 @@ public class MainActivity extends Activity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-
-        unregisterReceiver(mBroadcastReceiver);
     }
 
 //    public static void verifyStoragePermissions(Activity activity) {
@@ -255,6 +241,10 @@ public class MainActivity extends Activity {
         ArrayList<String> data_list = new ArrayList<String>();
 
         File file = new File("/data/data/" + packgeString + "/lib");
+
+        if (file == null || file.listFiles() == null || file.listFiles().length == 0)
+            return data_list;
+
         for (File f : file.listFiles())
         {
             boolean ignore = false;
