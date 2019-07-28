@@ -32,7 +32,8 @@ LOCAL_SRC_FILES := Utils/Substrate/hde64.c \
                    Entry/UnShellSo.cpp \
                    Unity/Unity.cpp \
                    Cocos/Cocos.cpp \
-                   Cocos/CocosDef.cpp
+                   Cocos/CocosDef.cpp \
+                   Cocos/DecryptEx.cpp
 
 LOCAL_CPPFLAGS := -fexceptions
 LOCAL_CPPFLAGS += \

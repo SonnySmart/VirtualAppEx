@@ -5,6 +5,8 @@
 #include "../Utils/Includes.h"
 #include "CocosDef.h"
 
+extern unsigned char *com_yoyo_dygame_GameApplication_decrypt(unsigned char *data, unsigned long len, unsigned long &out_len);
+
 struct xxtea_param {
     std::string key;
     size_t key_len;
@@ -50,13 +52,17 @@ WALK_FUNC(getDataFromFile)
     //    return;
 
     Data data = OLD_FUNC(getDataFromFile)(param, name);
-    if (data.getBytes() && data.getSize() > 0)
-        dump_write(PACK_NAME, ASSET_PATH, ASSET_NAME(name), (const char *)data.getBytes(), data.getSize());
+    if (data.getBytes() && data.getSize() > 0) {
+        //dump_write(PACK_NAME, ASSET_PATH, ASSET_NAME(name), (const char *)data.getBytes(), data.getSize());
+        unsigned long len = 0;
+        unsigned char *buffer = com_yoyo_dygame_GameApplication_decrypt(data.getBytes(), data.getSize(), len);
+        if (buffer && len > 0)
+            dump_write(PACK_NAME, ASSET_PATH, ASSET_NAME(name), (const char *)buffer, len);
+    }
 }
 Data NEW_FUNC(getDataFromFile)(void *self, const std::string& filename)
 {
     filewalk(TEMP_PATH, WALK_ADDR(getDataFromFile), self, G_walkCount);
-
     return OLD_FUNC(getDataFromFile)(self, filename);
 }
 
@@ -171,7 +177,11 @@ WALK_FUNC(initWithImageData)
 }
 bool NEW_FUNC(initWithImageData)(void*self, const unsigned char * data, ssize_t dataLen)
 {
-    filewalk(TEMP_PATH, WALK_ADDR(initWithImageData), self, G_walkCount);
+    //filewalk(TEMP_PATH, WALK_ADDR(initWithImageData), self, G_walkCount);
+    //DUALLOGI("[+] %s data[%p] len[%d]", __FUNCTION__, data, dataLen);
+    char buffer[128] = { 0 };
+    sprintf(buffer, "%p.png", data);
+    dump_write(PACK_NAME, ASSET_PATH, buffer, (const char *)data, dataLen);
     return OLD_FUNC(initWithImageData)(self, data, dataLen);
 }
 
@@ -332,8 +342,8 @@ void cocos_entry(const char *name, void *handle)
 
     if (G_HookConfig->dump_res1)
     {
-        //MS(handle, "_ZN7cocos2d5Image17initWithImageDataEPKhi", initWithImageData);
-        MS(handle, "_ZN7cocos2d5Image17initWithImageFileERKSs", initWithImageFile);
+        MS(handle, "_ZN7cocos2d5Image17initWithImageDataEPKhi", initWithImageData);
+        //MS(handle, "_ZN7cocos2d5Image17initWithImageFileERKSs", initWithImageFile);
         MS(handle, "_ZN7cocos2d5Image12detectFormatEPKhi", detectFormat);
     }
 

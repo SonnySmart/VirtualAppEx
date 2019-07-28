@@ -52,6 +52,7 @@ public class MainActivity extends Activity {
         so_list.add("libqpry_lua.so");
         so_list.add("libcocos2dlua.so");
         so_list.add("libgame.so");
+        so_list.add("libcocos2djs.so");
     }
 
     public void setPackageString(String packageString) {
