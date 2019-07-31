@@ -342,8 +342,8 @@ void cocos_entry(const char *name, void *handle)
 
     if (G_HookConfig->dump_res1)
     {
-        MS(handle, "_ZN7cocos2d5Image17initWithImageDataEPKhi", initWithImageData);
-        //MS(handle, "_ZN7cocos2d5Image17initWithImageFileERKSs", initWithImageFile);
+        //MS(handle, "_ZN7cocos2d5Image17initWithImageDataEPKhi", initWithImageData);
+        MS(handle, "_ZN7cocos2d5Image17initWithImageFileERKSs", initWithImageFile);
         MS(handle, "_ZN7cocos2d5Image12detectFormatEPKhi", detectFormat);
     }
 
