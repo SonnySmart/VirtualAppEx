@@ -150,15 +150,18 @@ unsigned char* NEW_FUNC(getFileData_2x)(void *self, const char* pszFileName, con
 int OLD_FUNC_PTR(detectFormat)(void *self, const unsigned char * data, ssize_t dataLen);
 int NEW_FUNC(detectFormat)(void *self, const unsigned char * data, ssize_t dataLen)
 {
-    //if (G_walkCount == 1)
+    if (G_walkCount == 1)
     {
         DUALLOGD("[+] [%s] data[%p] len[%d] name[%s]", __FUNCTION__, data, dataLen, tmp_filename.c_str());
         if (data && dataLen > 0)
         {
-            //dump_write(PACK_NAME, ASSET_PATH, ASSET_NAME(tmp_filename.c_str()), (const char *)data, dataLen);
+#if 1
+            dump_write(PACK_NAME, ASSET_PATH, ASSET_NAME(tmp_filename.c_str()), (const char *)data, dataLen);
+#else
             char buffer[128] = { 0 };
             sprintf(buffer, "%p.png", data);
             dump_write(PACK_NAME, ASSET_PATH, buffer, (const char *)data, dataLen);
+#endif
         }
     }
     return OLD_FUNC(detectFormat)(self, data, dataLen);
@@ -186,14 +189,20 @@ WALK_FUNC(initWithImageData)
 bool NEW_FUNC(initWithImageData)(void*self, const unsigned char * data, ssize_t dataLen)
 {
 #if 0
-    //filewalk(TEMP_PATH, WALK_ADDR(initWithImageData), self, G_walkCount);
-    DUALLOGI("[+] %s data[%p] len[%d]", __FUNCTION__, data, dataLen);
+    filewalk(TEMP_PATH, WALK_ADDR(initWithImageData), self, G_walkCount);
+    //DUALLOGI("[+] %s data[%p] len[%d]", __FUNCTION__, data, dataLen);
 #else
     char buffer[128] = { 0 };
     sprintf(buffer, "%p.png", data);
     dump_write(PACK_NAME, ASSET_PATH, buffer, (const char *)data, dataLen);
 #endif
     return OLD_FUNC(initWithImageData)(self, data, dataLen);
+}
+
+//bool initWithRawData(const unsigned char * data, ssize_t dataLen, int width, int height, int bitsPerComponent, bool preMulti = false);
+bool NEW_FUNC(initWithRawData)(void *self, const unsigned char * data, ssize_t dataLen, int width, int height, int bitsPerComponent, bool preMulti)
+{
+
 }
 
 bool OLD_FUNC_PTR(initWithImageFile)(void *self, const std::string& path);
@@ -332,37 +341,6 @@ unsigned char *NEW_FUNC(xxtea_decrypt)(unsigned char *data, unsigned int data_le
     return OLD_FUNC(xxtea_decrypt)(data, data_len, key, key_len, ret_length);
 }
 
-void *OLD_FUNC_PTR(createTexture2D)(void *self, const char *filename);
-WALK_FUNC(createTexture2D) {
-    if (check_res(name))
-    {
-        DUALLOGD("[+] [%s] name[%s] buff[%p] len[%d]", __FUNCTION__, name, buff, len);
-
-        if (check_png(name))
-        {
-            tmp_filename = name;
-            //DUALLOGI("buff[%p], len[%d] name[%s]", buff, len, name);
-            OLD_FUNC(createTexture2D)(param, name);
-        }
-        else
-        {
-            dump_write(PACK_NAME, ASSET_PATH, ASSET_NAME(name), (const char *)buff, len);
-        }
-    }
-
-}
-void *NEW_FUNC(createTexture2D)(void *self, const char *filename) {
-    //filewalk(TEMP_PATH, WALK_ADDR(createTexture2D), self, G_walkCount, false);
-    DUALLOGD("[+] [%s] name[%s]", __FUNCTION__, filename);
-    return OLD_FUNC(createTexture2D)(self, filename);
-}
-
-//#include <stdio.h>
-//#define DUMP(func, call) DUALLOGD("%s: func = %p, called by = %p\n", __FUNCTION__, func, call)
-//
-//void __attribute__((no_instrument_function)) __cyg_profile_func_enter(void *this_func, void *call_site) {DUMP(this_func, call_site);}
-//void __attribute__((no_instrument_function)) __cyg_profile_func_exit(void *this_func, void *call_site) {DUMP(this_func, call_site);}
-
 void cocos_entry(const char *name, void *handle)
 {
     G_walkCount = 0;
@@ -376,7 +354,6 @@ void cocos_entry(const char *name, void *handle)
 
     if (G_HookConfig->dump_res)
     {
-
         if (!MS(handle, "_ZN7cocos2d16FileUtilsAndroid11getFileDataERKSsPKcPi", getFileData_3x))
             MS(handle, "_ZN7cocos2d16FileUtilsAndroid11getContentsERKSsPNS_15ResizableBufferE", getContents);
         MS(handle, "_ZN7cocos2d18CCFileUtilsAndroid11getFileDataEPKcS2_Pm", getFileData_2x);
@@ -384,11 +361,8 @@ void cocos_entry(const char *name, void *handle)
 
     if (G_HookConfig->dump_res1)
     {
-        //MS(handle, "_ZN6dygame5Utils15createTexture2DEPKc", createTexture2D);
-        //MS(handle, "_ZN6dygame5Utils7decryptERN7cocos2d4DataE", decrypt);
-
         //MS(handle, "_ZN7cocos2d5Image17initWithImageDataEPKhi", initWithImageData);
-        //MS(handle, "_ZN7cocos2d5Image17initWithImageFileERKSs", initWithImageFile);
+        MS(handle, "_ZN7cocos2d5Image17initWithImageFileERKSs", initWithImageFile);
         MS(handle, "_ZN7cocos2d5Image12detectFormatEPKhi", detectFormat);
     }
 
