@@ -361,9 +361,9 @@ void cocos_entry(const char *name, void *handle)
 
     if (G_HookConfig->dump_res1)
     {
-        //MS(handle, "_ZN7cocos2d5Image17initWithImageDataEPKhi", initWithImageData);
-        MS(handle, "_ZN7cocos2d5Image17initWithImageFileERKSs", initWithImageFile);
-        MS(handle, "_ZN7cocos2d5Image12detectFormatEPKhi", detectFormat);
+        MS(handle, "_ZN7cocos2d5Image17initWithImageDataEPKhi", initWithImageData);
+        //MS(handle, "_ZN7cocos2d5Image17initWithImageFileERKSs", initWithImageFile);
+        //MS(handle, "_ZN7cocos2d5Image12detectFormatEPKhi", detectFormat);
     }
 
     if (G_HookConfig->dump_res2)
@@ -377,9 +377,10 @@ void cocos_entry(const char *name, void *handle)
 
     if (G_HookConfig->dump_xxtea)
     {
-        if (!MS(handle, "_Z13xxtea_decryptPhjS_jPj", xxtea_decrypt))
-            if (!MS(handle, "_Z8_byds_d_PhjS_jPj", xxtea_decrypt))
-                MS(handle, "_Z25xxtea_decrypt_in_cocos2dxPhjS_jPj", xxtea_decrypt);
+        //if (!MS(handle, "_ZN7cocos2d5extra6Crypto12decryptXXTEAEPhiS2_iPi", xxtea_decrypt))
+            if (!MS(handle, "_Z13xxtea_decryptPhjS_jPj", xxtea_decrypt))
+                if (!MS(handle, "_Z8_byds_d_PhjS_jPj", xxtea_decrypt))
+                    MS(handle, "_Z25xxtea_decrypt_in_cocos2dxPhjS_jPj", xxtea_decrypt);
     }
 
     DUALLOGW("[+] [%s] end", __FUNCTION__);
