@@ -64,36 +64,28 @@ void hook_dlopen(int api_level) {
     if (api_level > 23) {
         if (findSymbol("__dl__Z9do_dlopenPKciPK17android_dlextinfoPv", "linker",
                        (unsigned long *) &symbol) == 0) {
-#if WHALE
-            G_WInlineHookFunction(symbol, (void *) new_do_dlopen_V24,
-                           (void **) &old_do_dlopen_V24);
-#else
             DUALLOGD("__dl__Z9do_dlopenPKciPK17android_dlextinfoPv");
             MSHookFunction(symbol, (void *) new_do_dlopen_V24,
                            (void **) &old_do_dlopen_V24);
-#endif
+        }
+        else if (findSymbol("__dl__Z9do_dlopenPKciPK17android_dlextinfoPKv", "linker",
+                            (unsigned long *) &symbol) == 0) {
+            DUALLOGD("__dl__Z9do_dlopenPKciPK17android_dlextinfoPKv");
+            MSHookFunction(symbol, (void *) new_do_dlopen_V24,
+                           (void **) &old_do_dlopen_V24);
         }
     } else if (api_level >= 19) {
         if (findSymbol("__dl__Z9do_dlopenPKciPK17android_dlextinfo", "linker",
                        (unsigned long *) &symbol) == 0) {
-#if WHALE
-            G_WInlineHookFunction(symbol, (void *) new_do_dlopen_V19,
-                           (void **) &old_do_dlopen_V19);
-#else
             DUALLOGD("__dl__Z9do_dlopenPKciPK17android_dlextinfo");
             MSHookFunction(symbol, (void *) new_do_dlopen_V19,
                            (void **) &old_do_dlopen_V19);
-#endif
         }
     } else {
         if (findSymbol("__dl_dlopen", "linker",
                        (unsigned long *) &symbol) == 0) {
-#if WHALE
-            G_WInlineHookFunction(symbol, (void *) new_dlopen, (void **) &old_dlopen);
-#else
             DUALLOGD("__dl_dlopen");
             MSHookFunction(symbol, (void *) new_dlopen, (void **) &old_dlopen);
-#endif
         }
     }
 }

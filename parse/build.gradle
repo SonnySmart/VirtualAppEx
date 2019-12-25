@@ -1,16 +1,16 @@
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 28
+    compileSdkVersion 26
     buildToolsVersion '28.0.3'
     defaultConfig {
-        minSdkVersion 15
-        targetSdkVersion 28
+        minSdkVersion 17
+        targetSdkVersion 26
         versionCode 1
         versionName "1.0"
         externalNativeBuild {
             ndkBuild {
-                abiFilters "armeabi-v7a", "x86"
+                abiFilters "armeabi-v7a"
             }
         }
     }
@@ -37,4 +37,5 @@ android {
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     api project(':whale')
+    implementation 'com.github.princekin-f:EasyFloat:1.2.2'
 }

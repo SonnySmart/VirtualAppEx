@@ -385,23 +385,23 @@ int find_name(pid_t pid, const char *name, const char *libn,
     symtab_t s;
 
     if (0 > load_memmap(pid, mm, &nmm)) {
-        ALOGD("cannot read memory map\n");
+        ALOGE("cannot read memory map\n");
         return -1;
     }
     if (0
         > find_libname((char *) libn, (char *) libc, sizeof(libc),
                        &libcaddr, mm, nmm)) {
-        ALOGD("cannot find lib: %s\n", libn);
+        ALOGE("cannot find lib: %s\n", libn);
         return -1;
     }
     //ALOGD("lib: >%s<\n", libc)
     s = load_symtab(libc);
     if (!s) {
-        ALOGD("cannot read symbol table\n");
+        ALOGE("cannot read symbol table\n");
         return -1;
     }
     if (0 > lookup_func_sym(s, (char *) name, addr)) {
-        ALOGD("cannot find function: %s\n", name);
+        ALOGE("cannot find function: %s\n", name);
         return -1;
     }
     *addr += libcaddr;

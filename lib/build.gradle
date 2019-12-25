@@ -1,17 +1,17 @@
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 28
+    compileSdkVersion 26
     buildToolsVersion '28.0.3'
 
     defaultConfig {
-        minSdkVersion 15
-        targetSdkVersion 28
+        minSdkVersion 17
+        targetSdkVersion 26
         versionCode 1
         versionName "1.0"
         externalNativeBuild {
             ndkBuild {
-                abiFilters "armeabi-v7a", "x86"
+                abiFilters "armeabi-v7a"
             }
         }
     }

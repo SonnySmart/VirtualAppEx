@@ -39,7 +39,7 @@ public class Native implements IXposedHookLoadPackage {
 
         Log.d(TAG, "inject success . processName:" + lpparam.processName);
 
-        new BaiduTieBa().handleLoadPackage(lpparam);
-        new JinRiTouTiao().handleLoadPackage(lpparam);
+        //new BaiduTieBa().handleLoadPackage(lpparam);
+        //new JinRiTouTiao().handleLoadPackage(lpparam);
     }
 }

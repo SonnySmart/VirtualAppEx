@@ -47,7 +47,7 @@
 #define WALK_ADDR(fn) &fn##_buffer
 #define MS(handle, symbol, fn) inline_hook(handle, symbol, reinterpret_cast<void *>(NEW_FUNC(fn)), reinterpret_cast<void **>(&OLD_FUNC(fn)))
 #define HOOK_DEF(ret, func, ...) \
-  ret (*old_##func)(__VA_ARGS__); \
+  ret (*old_##func)(__VA_ARGS__) = NULL; \
   ret new_##func(__VA_ARGS__)
 
 typedef struct hook_config {

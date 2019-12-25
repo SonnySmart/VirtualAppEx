@@ -573,6 +573,16 @@ HOOK_DEF(int, execve, const char *pathname, char *argv[], char *const envp[]) {
     return ret;
 }
 
+HOOK_DEF(void, exit, int status) {
+    ALOGE("fn[%s] status[%d]", __FUNCTION__, status);
+    syscall(__NR_exit, status);
+    orig_exit(status);
+}
+
+HOOK_DEF(void, _exit, int status) {
+    ALOGE("fn[%s] status[%d]", __FUNCTION__, status);
+    orig__exit(status);
+}
 
 HOOK_DEF(void*, dlopen, const char *filename, int flag) {
     int res;
@@ -605,8 +615,6 @@ HOOK_DEF(void*, do_dlopen_V24, const char *name, int flags, const void *extinfo,
     return ret;
 }
 
-
-
 //void *dlsym(void *handle,const char *symbol)
 HOOK_DEF(void*, dlsym, void *handle, char *symbol) {
     ALOGD("dlsym : %p %s.", handle, symbol);
@@ -615,7 +623,7 @@ HOOK_DEF(void*, dlsym, void *handle, char *symbol) {
 
 // int kill(pid_t pid, int sig);
 HOOK_DEF(int, kill, pid_t pid, int sig) {
-    ALOGD(">>>>> kill >>> pid: %d, sig: %d.", pid, sig);
+    ALOGE(">>>>> kill >>> pid: %d, sig: %d.", pid, sig);
     int ret = syscall(__NR_kill, pid, sig);
     return ret;
 }
@@ -629,7 +637,7 @@ __END_DECLS
 
 
 void onSoLoaded(const char *name, void *handle) {
-    //ALOGD("[+] [%s] name[%s] handle[%p]", __FUNCTION__, name, handle);
+    ALOGI("[+] [%s] name[%s] handle[%p]", __FUNCTION__, name, handle);
 }
 
 int findSymbol(const char *name, const char *libn,
@@ -642,8 +650,15 @@ void hook_dlopen(int api_level) {
     if (api_level > 23) {
         if (findSymbol("__dl__Z9do_dlopenPKciPK17android_dlextinfoPv", "linker",
                        (unsigned long *) &symbol) == 0) {
+            ALOGD("__dl__Z9do_dlopenPKciPK17android_dlextinfoPv find .");
             MSHookFunction(symbol, (void *) new_do_dlopen_V24,
                           (void **) &orig_do_dlopen_V24);
+        }
+        else if (findSymbol("__dl__Z9do_dlopenPKciPK17android_dlextinfoPKv", "linker",
+                            (unsigned long *) &symbol) == 0) {
+            ALOGD("__dl__Z9do_dlopenPKciPK17android_dlextinfoPKv find .");
+            MSHookFunction(symbol, (void *) new_do_dlopen_V24,
+                           (void **) &orig_do_dlopen_V24);
         }
     } else if (api_level >= 19) {
         if (findSymbol("__dl__Z9do_dlopenPKciPK17android_dlextinfo", "linker",
@@ -690,6 +705,10 @@ void IOUniformer::startUniformer(const char *so_path, int api_level, int preview
 //        HOOK_SYMBOL(handle, __getdents64);
         HOOK_SYMBOL(handle, chdir);
         HOOK_SYMBOL(handle, execve);
+        // hook exit?
+        HOOK_SYMBOL(handle, kill);
+        HOOK_SYMBOL(handle, exit);
+        HOOK_SYMBOL(handle, _exit);
         if (api_level <= 20) {
             HOOK_SYMBOL(handle, access);
             HOOK_SYMBOL(handle, __open);
@@ -711,5 +730,5 @@ void IOUniformer::startUniformer(const char *so_path, int api_level, int preview
         }
         dlclose(handle);
     }
-    hook_dlopen(api_level);
+    //hook_dlopen(api_level);
 }
