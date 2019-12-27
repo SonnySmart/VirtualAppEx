@@ -10,6 +10,8 @@ LOCAL_C_INCLUDES += $(MAIN_LOCAL_PATH)/Utils/Misc
 LOCAL_C_INCLUDES += $(MAIN_LOCAL_PATH)/Utils/Substrate
 LOCAL_C_INCLUDES += $(MAIN_LOCAL_PATH)/Utils/dlfcn/include
 LOCAL_C_INCLUDES += $(MAIN_LOCAL_PATH)/Utils/Foundation
+LOCAL_C_INCLUDES += $(MAIN_LOCAL_PATH)/Utils/NativeCrashCatching
+LOCAL_C_INCLUDES += $(MAIN_LOCAL_PATH)/Utils/NativeCrashCatching/backtrace
 LOCAL_C_INCLUDES += $(MAIN_LOCAL_PATH)/Entry
 LOCAL_C_INCLUDES += $(MAIN_LOCAL_PATH)/Unity
 LOCAL_C_INCLUDES += $(MAIN_LOCAL_PATH)/Cocos
@@ -23,17 +25,20 @@ LOCAL_SRC_FILES := Utils/Substrate/hde64.c \
                    Utils/dlfcn/dlfcn_compat.cpp \
                    Utils/dlfcn/dlfcn_nougat.cpp \
                    Utils/Misc/Misc.cpp \
+                   Utils/Misc/CallStack.cpp \
                    Utils/Foundation/SymbolFinder.cpp \
                    Utils/Foundation/SandboxFs.cpp \
                    Utils/Foundation/Path.cpp \
+                   Utils/NativeCrashCatching/dlopen.c \
+                   Utils/NativeCrashCatching/util.cpp \
+                   Utils/NativeCrashCatching/crash_catching.cpp \
+                   Utils/NativeCrashCatching/backtrace/backtrace.cpp \
                    Entry/Entry.cpp \
                    Entry/Inject.cpp \
                    Entry/UnShellDex.cpp \
                    Entry/UnShellSo.cpp \
                    Unity/Unity.cpp \
-                   Cocos/Cocos.cpp \
-                   Cocos/CocosDef.cpp \
-                   Cocos/DecryptEx.cpp
+                   Cocos/Cocos.cpp
 
 LOCAL_CPPFLAGS := -fexceptions
 LOCAL_CPPFLAGS += \

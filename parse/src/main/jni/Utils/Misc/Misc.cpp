@@ -96,6 +96,11 @@ void dirwalk(const std::string &dir_name, std::vector<std::string> &files)
 
 void filewalk(const char *name, ptr_read_buffer ptr_read, void *param, size_t &walk_count, bool read_buff)
 {
+    size_t index = 0;
+    size_t len = 0;
+    char *buff = NULL;
+    char fullname[512] = { 0 };
+
     // 只会进行一次遍历
     if (walk_count++ > 0)
         return;
@@ -106,9 +111,15 @@ void filewalk(const char *name, ptr_read_buffer ptr_read, void *param, size_t &w
 
     for(auto i = files.begin(); i != files.end(); ++i) {
         const char *filename = (*i).c_str();
+        ++index;
 
-        char *buff = NULL;
-        size_t len = 0;
+        // 文件存在就跳过
+        memset(fullname, 0, sizeof(fullname));
+        sprintf(fullname, "%s/%s/%s", ASSET_PATH, PACK_NAME, ASSET_NAME(filename));
+        DUALLOGD("[+] [%s] 进度[%d/%d] 文件[%s]", __FUNCTION__, index, files.size(), filename);
+        if (access(fullname, F_OK) == 0)
+            continue;
+
         // 不读取buffer只取路径
         if (!read_buff && ptr_read)
         {
@@ -117,15 +128,17 @@ void filewalk(const char *name, ptr_read_buffer ptr_read, void *param, size_t &w
         }
         // 读取路径和buffer
         read_buffer(filename, buff, len);
-        if (buff && len > 0 && ptr_read)
+        if (buff && len > 0 && ptr_read) {
             ptr_read((char *)filename, buff, len, param);
-        else
-        {
+        }
+        else {
             DUALLOGE("[-] [%s] read_buffer buff[%p] len[%d]", __FUNCTION__, buff, len);
         }
 
         if (buff) free(buff);
     }
+
+    DUALLOGD("[+] [%s] 遍历完成文件个数[%d]", __FUNCTION__, files.size());
 }
 
 void mkdirs(const std::string &dir)

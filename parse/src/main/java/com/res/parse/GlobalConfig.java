@@ -34,7 +34,7 @@ public class GlobalConfig {
     public static String Current_PackageName = "com.res.parse";         //当前的包名,供Xposed读取配置用
     public static String Log_TAG = "TestInject";
     public static String Setting_SaveFileName = "myhook/config.json";                    //保存的文件名,共框架so读取配置
-
+    public static String Setting_TmpPath = "/sdcard/myhook/tmp";
 
     public static SharedPreferences mSharePreferences;
     public static SharedPreferences.Editor editor;

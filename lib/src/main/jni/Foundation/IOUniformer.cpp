@@ -575,7 +575,7 @@ HOOK_DEF(int, execve, const char *pathname, char *argv[], char *const envp[]) {
 
 HOOK_DEF(void, exit, int status) {
     ALOGE("fn[%s] status[%d]", __FUNCTION__, status);
-    syscall(__NR_exit, status);
+    //syscall(__NR_exit, status);
     orig_exit(status);
 }
 

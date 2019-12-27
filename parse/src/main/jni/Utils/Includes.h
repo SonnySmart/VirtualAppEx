@@ -8,16 +8,20 @@
 #define WHALE 0
 
 #include "Misc/Misc.h"
+#include "Misc/CallStack.h"
 #include "CJsonObject/CJsonObject.hpp"
 #include "Substrate/CydiaSubstrate.h"
 #include "dlfcn/include/dlfcn_compat.h"
 #include "Foundation/SymbolFinder.h"
 #include "Foundation/SandboxFs.h"
 #include "Foundation/Path.h"
+#include "NativeCrashCatching/dlopen.h"
+#include "NativeCrashCatching/crash_catching.h"
 #include <jni.h>
 #include <android/log.h>
 #include <dlfcn.h>
 #include <exception>
+#include <pthread.h>
 
 #define TAG "myhook"
 #define DUALLOGD(...) __android_log_print(ANDROID_LOG_DEBUG, TAG, __VA_ARGS__);printf(__VA_ARGS__)

@@ -78,42 +78,35 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="dump dll mono_image_init 解密" />
+            android:text="解密unity dll文件 mono_image_init 接口" />
 
         <CheckBox
             android:id="@+id/check_dump_lua"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="dump lua luaLoadBuffer 自解密" />
+            android:text="解密lua文件 luaLoadBuffer 接口" />
 
         <CheckBox
             android:id="@+id/check_dump_xxtea"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="dump xxtea key" />
+            android:text="打印 xxtea key" />
 
         <CheckBox
             android:id="@+id/check_dump_res"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="dump res FileUtilsAndroid::getFileData 自解密" />
-
-        <CheckBox
-            android:id="@+id/check_dump_res2"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="dump res FileUtils::getDataFromFile 自解密" />
+            android:text="解密文件 FileUtils::getFileData 接口" />
 
         <CheckBox
             android:id="@+id/check_dump_res1"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="dump res Image::initWithImageFile 自解密" />
+            android:text="解密资源 Image::initWithImageFile 接口" />
 
         <CheckBox
             android:id="@+id/check_dump_more"
@@ -182,6 +175,22 @@
             android:layout_gravity="center"
             android:layout_weight="1"
             android:text="启动游戏" />
+
+        <Button
+            android:id="@+id/btn_stop"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_weight="1"
+            android:text="停止游戏" />
+
+        <Button
+            android:id="@+id/btn_del"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_weight="1"
+            android:text="删除资源" />
     </LinearLayout>
 
     <TextView

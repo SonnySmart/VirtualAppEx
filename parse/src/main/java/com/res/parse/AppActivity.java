@@ -1,7 +1,6 @@
 package com.res.parse;
 
 import android.app.Activity;
-import android.content.Intent;
 import android.os.Handler;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -11,7 +10,6 @@ import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.res.app.ApkTool;
 import com.res.app.MyAppInfo;

@@ -104,6 +104,9 @@ JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved)
 
     DUALLOGD("[+] [%s] sdk_level[%d]", __FUNCTION__, get_sdk_level());
 
+    ndk_init(env);
+    InitCrashCaching();
+
 	do {
 	    if (G_VM) break;
 
@@ -111,13 +114,6 @@ JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved)
 
         if (!loadConfig()) break;
 
-#if WHALE
-        symbol = NULL;
-        if (findSymbol("WInlineHookFunction", "libwhale.so", (unsigned long *)&symbol) != 0)
-            break;
-
-        G_WInlineHookFunction = (ptr_WInlineHookFunction)symbol;
-#endif
         hook_dlopen(get_sdk_level());
 
         DUALLOGD("[+] [%s] hook_dlopen finish .", __FUNCTION__);

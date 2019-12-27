@@ -2,10 +2,7 @@ package com.res.parse;
 
 import android.Manifest;
 import android.app.Activity;
-import android.content.BroadcastReceiver;
-import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.view.View;
@@ -25,13 +22,17 @@ import static com.res.parse.GlobalConfig.editor;
 
 public class MainActivity extends Activity {
     private EditText et_inject_pckname, et_hook_soname, et_send_msg;
-    private Button bt_inject_pckname, btn_save, btn_start;
+    private Button bt_inject_pckname;
+    private Button btn_save;
+    private Button btn_start;
+    private Button btn_stop;
+    private Button btn_del;
     private Spinner spinner_hook_soname;
     private CheckBox check_dump_dll;
     private CheckBox check_dump_lua;
     private CheckBox check_dump_res;
     private CheckBox check_dump_res1;
-    private CheckBox check_dump_res2;
+    //private CheckBox check_dump_res2;
     private CheckBox check_dump_xxtea;
     private TextView tv_help;
 
@@ -70,6 +71,8 @@ public class MainActivity extends Activity {
                 }
             }
         }
+
+        initSpinnerHookSoName(ret);
     }
 
     @Override
@@ -90,11 +93,13 @@ public class MainActivity extends Activity {
         check_dump_lua = findViewById(R.id.check_dump_lua);
         check_dump_res = findViewById(R.id.check_dump_res);
         check_dump_res1 = findViewById(R.id.check_dump_res1);
-        check_dump_res2 = findViewById(R.id.check_dump_res2);
+        //check_dump_res2 = findViewById(R.id.check_dump_res2);
         check_dump_xxtea = findViewById(R.id.check_dump_xxtea);
         tv_help = findViewById(R.id.tv_help);
         btn_save = findViewById(R.id.btn_save);
         btn_start = findViewById(R.id.btn_start);
+        btn_stop = findViewById(R.id.btn_stop);
+        btn_del = findViewById(R.id.btn_del);
         GlobalConfig.init(getSharedPreferences(GlobalConfig.Setting_FileName, MODE_PRIVATE));
         bt_inject_pckname.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -114,18 +119,28 @@ public class MainActivity extends Activity {
                 onClickStart();
             }
         });
+        btn_stop.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                onClickStop();
+            }
+        });
+        btn_del.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                onClickDel();
+            }
+        });
 
-        initSpinnerHookSoName();
+        tv_help.setText("帮助说明:\n" +
+                "/sdcard/myhook/config.json 为配置文件\n" +
+                "/sdcard/myhook/tmp 把需要解密的文件拷贝进这个文件夹\n" +
+                "/sdcard/myhook/Cocos2dAsset/包名/ 解密完成去这个目录拷贝文件\n" +
+                "1.选择注入包名\n" +
+                "2.选择注入so之后\n" +
+                "3.点击保存配置\n" +
+                "4.从VirtualAppEx程序列表启动app既可");
 
-        tv_help.setText("帮助:\n" +
-                "1. /sdcard/myhook/config.json 为配置文件，误删！！！\n" +
-                "2. /sdcard/myhook/tmp 为加密文件路径，拷贝加密文件进这个目录(cocos热更新下载目录一般为 /data/data/包名/files/ 需要吧加密文件拷贝进/sdcard/myhook/tmp)\n" +
-                "3. /sdcard/myhook/Cocos2dAsset/包名/ 为解密文件路径，解密完成去这个目录拷贝文件\n" +
-                "4. 选择注入包名，选择注入so之后 '保存配置' 即可，从VirtualAppEx程序列表启动app，程序会黑屏一段时间正常现象，出现游戏界面说明解密完成了。");
-
-        //读取配置文件
-
-        GlobalConfig.readConfigFile();
         init();
     }
 
@@ -149,6 +164,9 @@ public class MainActivity extends Activity {
 
     void init()
     {
+        //读取配置文件
+        GlobalConfig.readConfigFile();
+
         et_inject_pckname.setText(GlobalConfig.getString(GlobalConfig.Setting_Key_pack_name, ""));
         et_hook_soname.setText(GlobalConfig.getString(GlobalConfig.Setting_Key_hook_name, ""));
         et_send_msg.setText(GlobalConfig.getString(GlobalConfig.Setting_Key_send_msg, "哈喽，你好啊～"));
@@ -156,23 +174,36 @@ public class MainActivity extends Activity {
         check_dump_lua.setChecked(GlobalConfig.getString(GlobalConfig.Setting_Key_dump_lua, "").equals("1"));
         check_dump_res.setChecked(GlobalConfig.getString(GlobalConfig.Setting_Key_dump_res, "").equals("1"));
         check_dump_res1.setChecked(GlobalConfig.getString(GlobalConfig.Setting_Key_dump_res1, "").equals("1"));
-        check_dump_res2.setChecked(GlobalConfig.getString(GlobalConfig.Setting_Key_dump_res2, "").equals("1"));
+        //check_dump_res2.setChecked(GlobalConfig.getString(GlobalConfig.Setting_Key_dump_res2, "").equals("1"));
         check_dump_xxtea.setChecked(GlobalConfig.getString(GlobalConfig.Setting_Key_dump_xxtea, "").equals("1"));
+
+        makeDir();
+
+        initSpinnerHookSoName();
+    }
+
+    void makeDir() {
+        //创建文件夹
+        File file = new File(GlobalConfig.Setting_TmpPath);
+        if (!file.exists())
+            file.mkdir();
     }
 
     void initSpinnerHookSoName()
     {
-//        String packString = et_inject_pckname.getText().toString();
-//        if (packString.isEmpty())
-//            initSpinnerHookSoName(new ArrayList<String>(so_list));
-//        else
-//            initSpinnerHookSoName(findAppLibs(packString, new ArrayList<String>()));
+        String packString = et_inject_pckname.getText().toString();
+        if (packString.isEmpty())
+            initSpinnerHookSoName(new ArrayList<String>(so_list));
+        else
+            initSpinnerHookSoName(findAppLibs(packString, new ArrayList<String>()));
 
-        initSpinnerHookSoName(new ArrayList<String>(so_list));
+        //initSpinnerHookSoName(new ArrayList<String>(so_list));
     }
 
     void initSpinnerHookSoName(ArrayList<String> data_list)
     {
+        spinner_hook_soname.removeAllViewsInLayout();
+
         data_list.add(0, "*.so");
 
         //适配器
@@ -214,7 +245,7 @@ public class MainActivity extends Activity {
             GlobalConfig.putString(GlobalConfig.Setting_Key_dump_lua, check_dump_lua.isChecked() ? "1" : "0");
             GlobalConfig.putString(GlobalConfig.Setting_Key_dump_res, check_dump_res.isChecked() ? "1" : "0");
             GlobalConfig.putString(GlobalConfig.Setting_Key_dump_res1, check_dump_res1.isChecked() ? "1" : "0");
-            GlobalConfig.putString(GlobalConfig.Setting_Key_dump_res2, check_dump_res2.isChecked() ? "1" : "0");
+            //GlobalConfig.putString(GlobalConfig.Setting_Key_dump_res2, check_dump_res2.isChecked() ? "1" : "0");
             GlobalConfig.putString(GlobalConfig.Setting_Key_dump_xxtea, check_dump_xxtea.isChecked() ? "1" : "0");
             editor.commit();
             GlobalConfig.writeSaveFile();
@@ -237,11 +268,26 @@ public class MainActivity extends Activity {
         }
     }
 
+    void onClickStop() {
+
+    }
+
+    void onClickDel() {
+        deleteFile(new File(GlobalConfig.Setting_TmpPath));
+        makeDir();
+        Toast.makeText(this, String.format("删除%stmp完成", GlobalConfig.Setting_TmpPath), Toast.LENGTH_LONG).show();
+    }
+
     ArrayList<String> findAppLibs(String packgeString, ArrayList<String> ignoreLists)
     {
         ArrayList<String> data_list = new ArrayList<String>();
 
-        File file = new File("/data/data/" + packgeString + "/lib");
+        String fileDir = getFilesDir().getAbsolutePath();
+
+        //virtual/data/app/packgeString/lib
+        String libDir = String.format("%s/../virtual/data/app/%s/lib", fileDir, packgeString);
+
+        File file = new File(libDir);
 
         if (file == null || file.listFiles() == null || file.listFiles().length == 0)
             return data_list;
@@ -259,8 +305,22 @@ public class MainActivity extends Activity {
             }
 
             if (!ignore)
-                data_list.add(f.getAbsolutePath());
+                data_list.add(f.getName());
         }
         return data_list;
+    }
+
+    //flie：要删除的文件夹的所在位置
+    private void deleteFile(File file) {
+        if (file.isDirectory()) {
+            File[] files = file.listFiles();
+            for (int i = 0; i < files.length; i++) {
+                File f = files[i];
+                deleteFile(f);
+            }
+            file.delete();//如要保留文件夹，只删除文件，请注释这行
+        } else if (file.exists()) {
+            file.delete();
+        }
     }
 }
