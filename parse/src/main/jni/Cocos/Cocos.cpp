@@ -232,6 +232,7 @@ void cocos_entry(const char *name, void *handle)
     {
         MS(handle, "_ZN7cocos2d9FileUtils11getInstanceEv", FileUtils_getInstance);
         MS(handle, "_ZN7cocos2d9FileUtils11getFileDataERKSsPKcPi", getFileData_3x);
+        //start_dump();
     }
 
     if (G_HookConfig->dump_res1)

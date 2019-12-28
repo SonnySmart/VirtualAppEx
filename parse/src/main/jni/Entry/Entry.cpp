@@ -3,7 +3,6 @@
 
 extern void unity_entry(const char *name, void *handle);
 extern void cocos_entry(const char *name, void *handle);
-extern void unshell_so_entry(void *base);
 
 void *symbol = NULL;
 

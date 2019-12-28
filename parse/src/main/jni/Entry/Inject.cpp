@@ -14,6 +14,8 @@ ptr_WInlineHookFunction G_WInlineHookFunction = NULL;
 extern "C" bool loadConfig();
 extern "C" void hook_entry(const char *name, void *handle);
 
+extern void unshell_so_entry(const char *name, void *handle);
+
 //JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved)
 HOOK_DEF(jint ,JNI_OnLoad, JavaVM* vm, void* reserved) {
     JNIEnv* env = NULL;
@@ -27,11 +29,15 @@ HOOK_DEF(jint ,JNI_OnLoad, JavaVM* vm, void* reserved) {
 
         G_VM = vm;
 
-        //ndk_init(env);
-        //InitCrashCaching();
+        ndk_init(env);
+        InitCrashCaching();
     } while (0);
 
-    return old_JNI_OnLoad(vm, reserved);
+    jint ret = old_JNI_OnLoad(vm, reserved);
+
+    unshell_so_entry("", NULL);
+
+    return ret;
 }
 
 void onSoLoaded(const char *name, void *handle) {
