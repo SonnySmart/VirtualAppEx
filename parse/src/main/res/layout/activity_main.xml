@@ -106,7 +106,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="解密资源 Image::initWithImageFile 接口" />
+            android:text="解密图片 Sprite::create 接口" />
 
         <CheckBox
             android:id="@+id/check_dump_more"

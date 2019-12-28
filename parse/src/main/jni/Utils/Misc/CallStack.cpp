@@ -75,9 +75,9 @@ void dumpBacktraceIndex(char *out, intptr_t* buffer, size_t count)
 }
 
 void call_stack() {
-    const size_t maxStackDeep = 100;
+    const size_t maxStackDeep = 30;
     intptr_t stackBuf[maxStackDeep];
-    char outBuf[4096];
+    char outBuf[2048];
     memset(outBuf,0,sizeof(outBuf));
     dumpBacktraceIndex(outBuf, stackBuf, captureBacktrace(stackBuf, maxStackDeep));
     DUALLOGD("dumpBacktraceIndex----------------------------------------\n[%s]\n----------------------------------------", outBuf);

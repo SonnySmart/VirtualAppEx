@@ -14,12 +14,34 @@ ptr_WInlineHookFunction G_WInlineHookFunction = NULL;
 extern "C" bool loadConfig();
 extern "C" void hook_entry(const char *name, void *handle);
 
+//JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved)
+HOOK_DEF(jint ,JNI_OnLoad, JavaVM* vm, void* reserved) {
+    JNIEnv* env = NULL;
+    if (vm->GetEnv((void**)&env, JNI_VERSION_1_6) != JNI_OK)
+    {
+        DUALLOGE("[-] [%s] GetEnv Error .", __FUNCTION__);
+        return JNI_ERR;
+    }
+    do {
+        //if (G_VM) break;
+
+        G_VM = vm;
+
+        //ndk_init(env);
+        //InitCrashCaching();
+    } while (0);
+
+    return old_JNI_OnLoad(vm, reserved);
+}
+
 void onSoLoaded(const char *name, void *handle) {
     ALOGD("[+] [%s] name[%s] handle[%p]", __FUNCTION__, name, handle);
 
     // so名称包含了包名 && hook名
-    if (strstr(name, PACK_NAME) && strstr(name, HOOK_NAME))
+    if (strstr(name, PACK_NAME) && strstr(name, HOOK_NAME)) {
+        MS(handle, "JNI_OnLoad", JNI_OnLoad);
         hook_entry(name, handle);
+    }
 }
 
 HOOK_DEF(void*, dlopen, const char *filename, int flag) {
@@ -93,7 +115,6 @@ void hook_dlopen(int api_level) {
 //注入后初始化并读取配置
 JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved)
 {
-    void *symbol = NULL;
     JNIEnv* env = NULL;
 
     if (vm->GetEnv((void**)&env, JNI_VERSION_1_6) != JNI_OK)
@@ -103,9 +124,6 @@ JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved)
     }
 
     DUALLOGD("[+] [%s] sdk_level[%d]", __FUNCTION__, get_sdk_level());
-
-    ndk_init(env);
-    InitCrashCaching();
 
 	do {
 	    if (G_VM) break;

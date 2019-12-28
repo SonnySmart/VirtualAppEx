@@ -99,7 +99,9 @@ void filewalk(const char *name, ptr_read_buffer ptr_read, void *param, size_t &w
     size_t index = 0;
     size_t len = 0;
     char *buff = NULL;
-    char fullname[512] = { 0 };
+    char fullname[1024] = { 0 };
+    char info [1024] = { 0 };
+    FILE *fp = NULL;
 
     // 只会进行一次遍历
     if (walk_count++ > 0)
@@ -109,14 +111,28 @@ void filewalk(const char *name, ptr_read_buffer ptr_read, void *param, size_t &w
 
     dirwalk(name, files);
 
+    fp = fopen(LOG_FILE, "w");
+
     for(auto i = files.begin(); i != files.end(); ++i) {
         const char *filename = (*i).c_str();
         ++index;
 
-        // 文件存在就跳过
+        // 拼接信息
         memset(fullname, 0, sizeof(fullname));
-        sprintf(fullname, "%s/%s/%s", ASSET_PATH, PACK_NAME, ASSET_NAME(filename));
+        memset(info, 0, sizeof(info));
+        snprintf(fullname, sizeof(fullname), "%s/%s/%s", ASSET_PATH, PACK_NAME, ASSET_NAME(filename));
+        snprintf(info, sizeof(info), "[+] [%s] 进度[%d/%d] 文件[%s]\n", __FUNCTION__, index, files.size(), filename);
+        // 打印日志
         DUALLOGD("[+] [%s] 进度[%d/%d] 文件[%s]", __FUNCTION__, index, files.size(), filename);
+        // 写入日志
+        if (fp) {
+            if (fwrite(info, sizeof(char), strlen(info), fp) <= 0) {
+                DUALLOGE("[-] [%s] errno[%s]", __FUNCTION__, errno);
+            }
+            fflush(fp);
+        }
+
+        // 文件存在就跳过
         if (access(fullname, F_OK) == 0)
             continue;
 
@@ -137,6 +153,17 @@ void filewalk(const char *name, ptr_read_buffer ptr_read, void *param, size_t &w
 
         if (buff) free(buff);
     }
+
+    if (fp) {
+        memset(info, 0, sizeof(info));
+        snprintf(info, sizeof(info), "[+] [%s] 遍历完成文件个数[%d]\n", __FUNCTION__, files.size());
+        if (fwrite(info, sizeof(char), strlen(info), fp) <= 0) {
+            DUALLOGE("[-] [%s] errno[%s]", __FUNCTION__, errno);
+        }
+        fflush(fp);
+    }
+
+    if (fp) fclose(fp);
 
     DUALLOGD("[+] [%s] 遍历完成文件个数[%d]", __FUNCTION__, files.size());
 }
@@ -183,7 +210,7 @@ int dump_write(const char *pack, const char *path, const char *name, const char 
     if (filename.empty())
     {
         char tmp[32] = { 0 };
-        sprintf(tmp, "%p-%d", buff, len);
+        snprintf(tmp, sizeof(tmp), "%p-%d", buff, len);
         filename.append(tmp);
     }
 

@@ -7,11 +7,6 @@ extern void unshell_so_entry(void *base);
 
 void *symbol = NULL;
 
-void *thread_cocos_entry(void *arg) {
-    cocos_entry("", arg);
-    return (void *)0;
-}
-
 // extern
 extern "C" void hook_entry(const char *name, void *handle)
 {
@@ -36,11 +31,6 @@ extern "C" void hook_entry(const char *name, void *handle)
         //_ZN7cocos2d14cocos2dVersionEv
         if ((symbol = dlsym(handle, "_ZN7cocos2d14cocos2dVersionEv")))
         {
-//            pthread_t pid = 0;
-//            if (pthread_create(&pid, NULL, thread_cocos_entry, handle) == -1)
-//            {
-//                DUALLOGD("pthread_create error!");
-//            }
             cocos_entry(name, handle);
             DUALLOGD("[+] [%s] name[%s] handle[%p] hooked .", __FUNCTION__, name, handle);
         } else {

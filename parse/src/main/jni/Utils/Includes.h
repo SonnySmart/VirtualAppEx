@@ -40,6 +40,7 @@
 #define TEMP_PATH "/sdcard/myhook/tmp"
 #define ASSET_PATH "/sdcard/myhook/Cocos2dAsset"
 #define INJECT_PATH "/sdcard/myhook/inject"
+#define LOG_FILE "/sdcard/myhook/log.txt"
 #define ASSET_NAME(name) assets_name(name, TEMP_PATH)
 #define PACK_NAME G_HookConfig->pack_name.c_str()
 #define HOOK_NAME G_HookConfig->hook_name.c_str()
