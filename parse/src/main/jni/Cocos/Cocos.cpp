@@ -4,10 +4,10 @@
 
 #include "../Utils/Includes.h"
 
+static void * G_Handle = NULL;
 static size_t G_bWalkResCount = 0;
 static size_t G_bWalkLuaCount = 0;
 static char G_filename[1024] = { 0 };
-//std::string G_filename;
 
 bool check_res(const char *name) {
     return strstr(name, "/res/");
@@ -25,6 +25,10 @@ bool check_lua(const char *name) {
     return strstr(name, ".lua");
 }
 
+bool check_zip(const char *name) {
+    return strstr(name, ".zip");
+}
+
 /* file dump start */
 //static FileUtils* getInstance();
 HOOK_DEF(void *, FileUtils_getInstance) {
@@ -33,6 +37,7 @@ HOOK_DEF(void *, FileUtils_getInstance) {
 
 //unsigned char* getFileData(const std::string& filename, const char* mode, ssize_t *size)
 HOOK_DEF(unsigned char *, getFileData_3x, void *self, const std::string& filename, const char* mode, ssize_t *size) {
+    DUALLOGD("[+] [%s] filename[%s]", __FUNCTION__, filename.c_str());
     return old_getFileData_3x(self, filename, mode, size);
 }
 
@@ -56,12 +61,6 @@ WALK_FUNC(getFileData) {
 /* res dump start */
 HOOK_DEF(void, Image, void *self) {
     old_Image(self);
-}
-
-//bool Image::initWithImageFile(const std::string& path)
-HOOK_DEF(bool, initWithImageFile, void *self, const std::string& path) {
-    //DUALLOGD("[+] [%s] self[%p] path[%s]", __FUNCTION__, self, path.c_str());
-    return old_initWithImageFile(self, path);
 }
 
 //Sprite* Sprite::create(const std::string& filename)
@@ -114,13 +113,6 @@ HOOK_DEF(void ,lua_settop, void *L, int idx) {
 }
 
 void *G_lua_State = NULL;
-//lua_State *(luaL_newstate) (void);
-HOOK_DEF(void *, luaL_newstate) {
-    G_lua_State = old_luaL_newstate();
-    DUALLOGD("[+] [%s] G_lua_State[%p]", __FUNCTION__, G_lua_State);
-    return G_lua_State;
-}
-
 //void luaL_openlibs(lua_State *L);
 HOOK_DEF(void , luaL_openlibs, void *L) {
     G_lua_State = L;
@@ -181,6 +173,81 @@ HOOK_DEF(unsigned char *, xxtea_decrypt, unsigned char *data, unsigned int data_
     return old_xxtea_decrypt(data, data_len, key, key_len, ret_length);
 }
 
+void *G_LuaStack = NULL;
+//static LuaStack *create(void);
+HOOK_DEF(void *, LuaStack_create) {
+    G_LuaStack = old_LuaStack_create();
+    return G_LuaStack;
+}
+
+//int loadChunksFromZIP(const char *zipFilePath);
+HOOK_DEF(int, loadChunksFromZIP, void *self, const char *zipFilePath) {
+    DUALLOGD("[+] [%s] zipFilePath[%s]", __FUNCTION__, zipFilePath);
+    return old_loadChunksFromZIP(self, zipFilePath);
+}
+
+//ZipFile *ZipFile::createWithBuffer(const void* buffer, uLong size)
+HOOK_DEF(void *, createWithBuffer, const void* buffer, unsigned long size) {
+    DUALLOGD("[+] [%s] buffer[%p] size[%d]", __FUNCTION__, buffer, size);
+    const char *name = G_filename;
+    if (strstr(name, TEMP_PATH) && buffer && size > 0)
+        dump_write(PACK_NAME, ASSET_PATH, ASSET_NAME(name), (char *)buffer, size);
+    return old_createWithBuffer(buffer, size);
+}
+
+WALK_FUNC(loadChunksFromZIP) {
+    if (!check_zip(name))
+        return;
+
+    memset(G_filename, 0, sizeof(G_filename));
+    snprintf(G_filename, sizeof(G_filename), "%s", name);
+
+    if (old_loadChunksFromZIP && G_LuaStack) old_loadChunksFromZIP(G_LuaStack, name);
+}
+
+//_DWORD __fastcall ycRes::makeImageWithFilename(ycRes *__hidden this, const char *)
+HOOK_DEF(void *, makeImageWithFilename, void *self, const char *filename) {
+    DUALLOGD("[+] [%s] filename[%s]", __FUNCTION__, filename);
+    return old_makeImageWithFilename(self, filename);
+}
+
+// _DWORD __fastcall ycRes::getFileData(ycRes *__hidden this, const char *, int *)
+HOOK_DEF(void *, ycRes_getFileData, void *self, const char *filename, int *size) {
+    DUALLOGD("[+] [%s] filename[%s] size[%d]", __FUNCTION__, filename, *size);
+    return old_ycRes_getFileData(self, filename, size);
+}
+
+//ycRes::create(resType, char const*, char const*, char const*)
+HOOK_DEF(void *, ycRes_create, int resType, char const *p1, char const *p2, char const *p3) {
+    DUALLOGD("[+] [%s] resType[%d] p1[%s] p2[%s] p3[%s]", __FUNCTION__, resType, p1, p2, p3);
+    return old_ycRes_create(resType, p1, p2, p3);
+}
+
+//ycPack::extractFile(char const*, ycFile *, char const*)
+HOOK_DEF(void *, ycPack_extractFile, void *self, char const*p1, void *ycFile, char const*p2) {
+    DUALLOGD("[+] [%s] p1[%s] ycFile[%p] p3[%s]", __FUNCTION__, p1, ycFile, p2);
+    return old_ycPack_extractFile(self, p1, ycFile, p2);
+}
+
+//int __fastcall ycFunction::getFileData(ycFunction *this, const char *a2, bool a3)
+HOOK_DEF(void *, ycFunction_getFileData, void *self, const char *p1, bool p2) {
+    DUALLOGD("[+] [%s] p1[%s] p2[%d]", __FUNCTION__, p1, p2);
+    return old_ycFunction_getFileData(self, p1, p2);
+}
+
+//_DWORD __fastcall bin2hex(unsigned __int8 *, int)
+HOOK_DEF(char *, bin2hex, void *self,  unsigned char *buff, int len) {
+    char *ret = old_bin2hex(self, buff, len);
+    DUALLOGD("[+] [%s] ret[%p] len[%d]", __FUNCTION__, ret, strlen(ret));
+    return ret;
+}
+
+//ycPack::init(packType, char const*, unsigned char *)
+HOOK_DEF(void *, ycPack_init, int packType, char const *p1, unsigned char *p2) {
+    DUALLOGD("[+] [%s] packType[%d] p1[%s], p2[%s]", __FUNCTION__, packType, p1, p2);
+    return old_ycPack_init(packType, p1, p2);
+}
+
 void start_dump() {
     if (G_HookConfig->dump_lua && G_bWalkLuaCount == 0) {
         DUALLOGD("开始..................................");
@@ -188,17 +255,24 @@ void start_dump() {
     }
     if (G_HookConfig->dump_res && G_bWalkResCount == 0) {
         DUALLOGD("开始..................................");
-        filewalk(TEMP_PATH, WALK_ADDR(getFileData), old_FileUtils_getInstance(), G_bWalkResCount, false);
+        //filewalk(TEMP_PATH, WALK_ADDR(getFileData), old_FileUtils_getInstance(), G_bWalkResCount, false);
     }
     if (G_HookConfig->dump_res1 && G_bWalkResCount == 0) {
         DUALLOGD("开始..................................");
         filewalk(TEMP_PATH, WALK_ADDR(Image), NULL, G_bWalkResCount, false);
     }
+    if (G_HookConfig->dump_res2 && G_bWalkResCount == 0) {
+        DUALLOGD("开始..................................");
+        filewalk(TEMP_PATH, WALK_ADDR(loadChunksFromZIP), NULL, G_bWalkResCount, false);
+    }
 }
+
+extern void unshell_so_entry(const char *name, void *handle);
 
 //bool AppDelegate::applicationDidFinishLaunching()
 HOOK_DEF(bool ,applicationDidFinishLaunching) {
     bool ret = old_applicationDidFinishLaunching();
+    //unshell_so_entry(NULL, NULL);
     start_dump();
     return ret;
 }
@@ -206,19 +280,26 @@ HOOK_DEF(bool ,applicationDidFinishLaunching) {
 void cocos_entry(const char *name, void *handle)
 {
     //toast("cocos 开始注入...");
-
+    G_Handle = handle;
     G_bWalkLuaCount = 0;
     G_bWalkResCount = 0;
 
     //HOOK启动函数
     MS(handle, "_ZN11AppDelegate29applicationDidFinishLaunchingEv", applicationDidFinishLaunching);
 
+    MS(handle, "_ZN5ycRes21makeImageWithFilenameEPKc", makeImageWithFilename);
+    MS(handle, "_ZN5ycRes11getFileDataEPKcPi", ycRes_getFileData);
+    MS(handle, "_ZN5ycRes6createE7resTypePKcS2_S2_", ycRes_create);
+    MS(handle, "_ZN6ycPack11extractFileEPKcP6ycFileS1_", ycPack_extractFile);
+    //MS(handle, "_ZN10ycFunction11getFileDataEPKcb", ycFunction_getFileData);
+    //MS(handle, "_ZN7cocos2d5extra6Crypto7bin2hexEPhi", bin2hex);
+    MS(handle, "_ZN6ycPack4initE8packTypePKcPh", ycPack_init);
+
     if (G_HookConfig->dump_lua)
     {
         /* lua func */
         MS(handle, "lua_pushstring", lua_pushstring);
         MS(handle, "lua_settop", lua_settop);
-        //MS(handle, "luaL_newstate", luaL_newstate);
         MS(handle, "luaL_openlibs", luaL_openlibs);
         MS(handle, "luaL_loadbuffer", luaL_loadbuffer);
         /* lua func */
@@ -231,28 +312,29 @@ void cocos_entry(const char *name, void *handle)
     if (G_HookConfig->dump_res)
     {
         MS(handle, "_ZN7cocos2d9FileUtils11getInstanceEv", FileUtils_getInstance);
-        MS(handle, "_ZN7cocos2d9FileUtils11getFileDataERKSsPKcPi", getFileData_3x);
+        if (!MS(handle, "_ZN7cocos2d16FileUtilsAndroid11getFileDataERKSsPKcPi", getFileData_3x))
+            MS(handle, "_ZN7cocos2d9FileUtils11getFileDataERKSsPKcPi", getFileData_3x);
         //start_dump();
     }
 
     if (G_HookConfig->dump_res1)
     {
-        //MS(handle, "_ZN7cocos2d5Image17initWithImageFileERKSs", initWithImageFile);
-        //MS(handle, "_ZN7cocos2d5ImageC2Ev", Image);
         MS(handle, "_ZN7cocos2d5Image12detectFormatEPKhi", detectFormat);
         MS(handle, "_ZN7cocos2d6Sprite6createERKSs", Sprite_create);
     }
 
     if (G_HookConfig->dump_res2)
     {
-        DUALLOGE("dump_res2 没有实现");
+        MS(handle, "_ZN7cocos2d8LuaStack6createEv", LuaStack_create);
+        MS(handle, "_ZN7cocos2d8LuaStack17loadChunksFromZIPEPKc", loadChunksFromZIP);
+        MS(handle, "_ZN7cocos2d7ZipFile16createWithBufferEPKvm", createWithBuffer);
     }
 
     if (G_HookConfig->dump_xxtea)
     {
-        MS(handle, "_Z13xxtea_decryptPhjS_jPj", xxtea_decrypt);
-        MS(handle, "_Z8_byds_d_PhjS_jPj", xxtea_decrypt);
-        MS(handle, "_Z25xxtea_decrypt_in_cocos2dxPhjS_jPj", xxtea_decrypt);
+        if (!MS(handle, "_Z13xxtea_decryptPhjS_jPj", xxtea_decrypt))
+            if (!MS(handle, "_Z8_byds_d_PhjS_jPj", xxtea_decrypt))
+                MS(handle, "_Z25xxtea_decrypt_in_cocos2dxPhjS_jPj", xxtea_decrypt);
     }
 
     DUALLOGW("[+] [%s] cocos 注入成功 .", __FUNCTION__);

@@ -15,6 +15,7 @@ LOCAL_C_INCLUDES += $(MAIN_LOCAL_PATH)/Utils/NativeCrashCatching/backtrace
 LOCAL_C_INCLUDES += $(MAIN_LOCAL_PATH)/Entry
 LOCAL_C_INCLUDES += $(MAIN_LOCAL_PATH)/Unity
 LOCAL_C_INCLUDES += $(MAIN_LOCAL_PATH)/Cocos
+LOCAL_C_INCLUDES += $(MAIN_LOCAL_PATH)/Lua
 
 LOCAL_SRC_FILES := Utils/Substrate/hde64.c \
                    Utils/Substrate/SubstrateDebug.cpp \

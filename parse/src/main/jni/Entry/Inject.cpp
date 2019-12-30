@@ -25,17 +25,17 @@ HOOK_DEF(jint ,JNI_OnLoad, JavaVM* vm, void* reserved) {
         return JNI_ERR;
     }
     do {
-        //if (G_VM) break;
+        if (G_VM) break;
 
         G_VM = vm;
 
-        ndk_init(env);
-        InitCrashCaching();
+        //ndk_init(env);
+        //InitCrashCaching();
     } while (0);
 
     jint ret = old_JNI_OnLoad(vm, reserved);
 
-    unshell_so_entry("", NULL);
+    //unshell_so_entry("", NULL);
 
     return ret;
 }
@@ -45,7 +45,7 @@ void onSoLoaded(const char *name, void *handle) {
 
     // so名称包含了包名 && hook名
     if (strstr(name, PACK_NAME) && strstr(name, HOOK_NAME)) {
-        MS(handle, "JNI_OnLoad", JNI_OnLoad);
+        //MS(handle, "JNI_OnLoad", JNI_OnLoad);
         hook_entry(name, handle);
     }
 }
@@ -134,7 +134,7 @@ JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved)
 	do {
 	    if (G_VM) break;
 
-        G_VM = vm;
+        //G_VM = vm;
 
         if (!loadConfig()) break;
 

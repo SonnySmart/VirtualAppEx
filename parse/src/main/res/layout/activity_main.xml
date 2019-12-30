@@ -102,6 +102,13 @@
             android:text="解密文件 FileUtils::getFileData 接口" />
 
         <CheckBox
+            android:id="@+id/check_dump_res2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="解密zip loadChunksFromZIP 接口" />
+
+        <CheckBox
             android:id="@+id/check_dump_res1"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

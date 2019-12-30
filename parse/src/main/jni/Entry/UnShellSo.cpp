@@ -7,63 +7,56 @@
 
 void unshell_so_entry(const char *name, void *handle)
 {
-    FILE *fp = NULL;
-    char line[1024] = { 0 };
+    FILE *maps;
+    char buff[256];
+    char *token = NULL, *buffer = NULL;
+    off_t load_addr = 0, end_addr = 0, tmp_addr = 0;
+    size_t size = 0, page_size = 0;
+    int found = 0;
 
-    char *pch;
-    long beginAddr;
-    long endAddr;
-    std::vector<std::string> strLine;
-    std::vector<std::string>::iterator it;
-    int length = 0;
-
-    if ((fp = fopen("/proc/self/maps", "r")) == NULL) {
-        DUALLOGE("[-] [%s] [%s]", __FUNCTION__, errno);
+    maps = fopen("/proc/self/maps", "r");
+    if (!maps) {
+        DUALLOGE("failed to open maps");
         return;
     }
 
-    while (fgets(line, sizeof(line), fp)) {
-        if (strstr(line, HOOK_NAME))
-        {
-            strLine.push_back(line);
-            DUALLOGD("unshell_so_entry[%s]", line);
+    while (fgets(buff, sizeof(buff), maps)) {
+        if (strstr(buff, HOOK_NAME)) {
+            DUALLOGD("%s", buff);
+            ++found;
+
+            /* 获取第一个子字符串 */
+            token = strtok(buff, " ");
+            token = strtok(token, "-");
+            tmp_addr = strtoul(token, NULL, 16);
+            //if (tmp_addr != 0 && end_addr != 0 && tmp_addr != end_addr) break;
+            if (load_addr == 0) load_addr = tmp_addr;
+            token = strtok(NULL, "-");
+            end_addr = strtoul(token, NULL, 16);
         }
     }
 
-    fclose(fp);
+    fclose(maps);
 
-    it = strLine.begin();
-    char *new_line = (char *) malloc(1024);
-    char *new_line2 = (char *) malloc(1024);
-    strcpy(new_line, (*it).c_str());
-    pch = strtok(new_line, "-");
-    char* begAddr=pch;
-    if (pch != NULL) {
-        beginAddr = strtoul(pch, NULL, 16);
+    if (found == 0) {
+        DUALLOGE("failed not found [%s]", HOOK_NAME);
+        return;
     }
-    it = strLine.end() - 1;
-    strcpy(new_line2, (*it).c_str());
-    pch = strtok(new_line2, " ");
-    if (pch != NULL) {
-        pch = strtok(pch, "-");
-        pch = strtok(NULL, "-");
-        DUALLOGE("pch--%s", pch);
-    }
-    endAddr = strtoul(pch, NULL, 16);
-    DUALLOGE("beginAddr=%ld", beginAddr);
-    DUALLOGE("endAddr=%ld", endAddr);
-    length = (int) (endAddr - beginAddr);
-    free(new_line);
-    free(new_line2);
-    new_line = NULL;
-    new_line2 = NULL;
-    uint32_t page_size = getpagesize();
-    int n = length / page_size;
-    int ret = mprotect((void *) beginAddr, page_size * n, PROT_READ | PROT_WRITE | PROT_EXEC);
-    DUALLOGE("page_size=%d", page_size);
-    DUALLOGE("length=%d", length);
-    char *memory = (char *) malloc(length * sizeof(char));
-    memcpy(memory, (void *) beginAddr, length);
 
-    dump_write(PACK_NAME, ASSET_PATH, HOOK_NAME, memory, length);
+    size = (size_t)(end_addr - load_addr);
+
+    DUALLOGD("load_addr[%x]", load_addr);
+    DUALLOGD("end_addr[%x]", end_addr);
+    DUALLOGD("size[%d]", size);
+
+    page_size = (size_t)getpagesize();
+    if (mprotect((void *) load_addr, page_size * (size / page_size), PROT_READ | PROT_WRITE | PROT_EXEC) != 0) {
+        DUALLOGE("[-] [%s] mprotect[%s]", __FUNCTION__, errno);
+        return;
+    }
+
+    buffer = (char *)malloc(size);
+    memcpy(buffer, (void *)load_addr, size);
+
+    dump_write(PACK_NAME, ASSET_PATH, HOOK_NAME, buffer, size);
 }
