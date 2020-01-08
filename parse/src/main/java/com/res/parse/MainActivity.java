@@ -4,6 +4,7 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.AdapterView;
@@ -81,7 +82,7 @@ public class MainActivity extends Activity {
 
         Instance = this;
 
-        //verifyStoragePermissions(this);
+        verifyStoragePermissions(this);
 
         setContentView(R.layout.activity_main);
         et_inject_pckname = findViewById(R.id.et_inject_pckname);
@@ -139,10 +140,12 @@ public class MainActivity extends Activity {
                 "/sdcard/myhook/Cocos2dAsset/包名/ 解密完成去这个目录拷贝文件\n" +
                 "1.选择注入包名\n" +
                 "2.选择注入so之后\n" +
-                "3.点击保存配置\n" +
-                "4.从VirtualAppEx程序列表启动app既可");
+                "3.选择勾选项" +
+                "4.点击保存配置\n" +
+                "5.从VirtualAppEx程序列表启动app既可" +
+                "作者QQ99939534有问题可以联系");
 
-        init();
+        initConfig();
     }
 
     @Override
@@ -150,20 +153,25 @@ public class MainActivity extends Activity {
         super.onDestroy();
     }
 
-//    public static void verifyStoragePermissions(Activity activity) {
-//        // Check if we have write permission
-//        int permission = ActivityCompat.checkSelfPermission(activity, Manifest.permission.WRITE_EXTERNAL_STORAGE);
-//        if (permission != PackageManager.PERMISSION_GRANTED) {
-//        // We don't have permission so prompt the user
-//            ActivityCompat.requestPermissions(
-//                    activity,
-//                    PERMISSIONS_STORAGE,
-//                    REQUEST_EXTERNAL_STORAGE
-//            );
-//        }
-//    }
+    void verifyStoragePermissions(Activity activity) {
+        /**
+         * 动态获取权限，Android 6.0 新特性，一些保护权限，除了要在AndroidManifest中声明权限，还要使用如下代码动态获取
+         */
+        if (Build.VERSION.SDK_INT >= 23) {
+            int REQUEST_CODE_CONTACT = 101;
+            String[] permissions = {Manifest.permission.WRITE_EXTERNAL_STORAGE};
+            //验证是否许可权限
+            for (String str : permissions) {
+                if (this.checkSelfPermission(str) != PackageManager.PERMISSION_GRANTED) {
+                    //申请权限
+                    this.requestPermissions(permissions, REQUEST_CODE_CONTACT);
+                    return;
+                }
+            }
+        }
+    }
 
-    void init()
+    void initConfig()
     {
         //读取配置文件
         GlobalConfig.readConfigFile();
@@ -274,7 +282,11 @@ public class MainActivity extends Activity {
     }
 
     void onClickDel() {
+        String packString = et_inject_pckname.getText().toString();
         deleteFile(new File(GlobalConfig.Setting_TmpPath));
+        if (!packString.isEmpty()) {
+            deleteFile(new File(String.format("/sdcard/myhook/Cocos2dAsset/%s", packString)));
+        }
         makeDir();
         Toast.makeText(this, String.format("删除%stmp完成", GlobalConfig.Setting_TmpPath), Toast.LENGTH_LONG).show();
     }

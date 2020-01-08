@@ -205,49 +205,6 @@ WALK_FUNC(loadChunksFromZIP) {
     if (old_loadChunksFromZIP && G_LuaStack) old_loadChunksFromZIP(G_LuaStack, name);
 }
 
-//_DWORD __fastcall ycRes::makeImageWithFilename(ycRes *__hidden this, const char *)
-HOOK_DEF(void *, makeImageWithFilename, void *self, const char *filename) {
-    DUALLOGD("[+] [%s] filename[%s]", __FUNCTION__, filename);
-    return old_makeImageWithFilename(self, filename);
-}
-
-// _DWORD __fastcall ycRes::getFileData(ycRes *__hidden this, const char *, int *)
-HOOK_DEF(void *, ycRes_getFileData, void *self, const char *filename, int *size) {
-    DUALLOGD("[+] [%s] filename[%s] size[%d]", __FUNCTION__, filename, *size);
-    return old_ycRes_getFileData(self, filename, size);
-}
-
-//ycRes::create(resType, char const*, char const*, char const*)
-HOOK_DEF(void *, ycRes_create, int resType, char const *p1, char const *p2, char const *p3) {
-    DUALLOGD("[+] [%s] resType[%d] p1[%s] p2[%s] p3[%s]", __FUNCTION__, resType, p1, p2, p3);
-    return old_ycRes_create(resType, p1, p2, p3);
-}
-
-//ycPack::extractFile(char const*, ycFile *, char const*)
-HOOK_DEF(void *, ycPack_extractFile, void *self, char const*p1, void *ycFile, char const*p2) {
-    DUALLOGD("[+] [%s] p1[%s] ycFile[%p] p3[%s]", __FUNCTION__, p1, ycFile, p2);
-    return old_ycPack_extractFile(self, p1, ycFile, p2);
-}
-
-//int __fastcall ycFunction::getFileData(ycFunction *this, const char *a2, bool a3)
-HOOK_DEF(void *, ycFunction_getFileData, void *self, const char *p1, bool p2) {
-    DUALLOGD("[+] [%s] p1[%s] p2[%d]", __FUNCTION__, p1, p2);
-    return old_ycFunction_getFileData(self, p1, p2);
-}
-
-//_DWORD __fastcall bin2hex(unsigned __int8 *, int)
-HOOK_DEF(char *, bin2hex, void *self,  unsigned char *buff, int len) {
-    char *ret = old_bin2hex(self, buff, len);
-    DUALLOGD("[+] [%s] ret[%p] len[%d]", __FUNCTION__, ret, strlen(ret));
-    return ret;
-}
-
-//ycPack::init(packType, char const*, unsigned char *)
-HOOK_DEF(void *, ycPack_init, int packType, char const *p1, unsigned char *p2) {
-    DUALLOGD("[+] [%s] packType[%d] p1[%s], p2[%s]", __FUNCTION__, packType, p1, p2);
-    return old_ycPack_init(packType, p1, p2);
-}
-
 void start_dump() {
     if (G_HookConfig->dump_lua && G_bWalkLuaCount == 0) {
         DUALLOGD("开始..................................");
@@ -255,7 +212,7 @@ void start_dump() {
     }
     if (G_HookConfig->dump_res && G_bWalkResCount == 0) {
         DUALLOGD("开始..................................");
-        //filewalk(TEMP_PATH, WALK_ADDR(getFileData), old_FileUtils_getInstance(), G_bWalkResCount, false);
+        filewalk(TEMP_PATH, WALK_ADDR(getFileData), old_FileUtils_getInstance(), G_bWalkResCount, false);
     }
     if (G_HookConfig->dump_res1 && G_bWalkResCount == 0) {
         DUALLOGD("开始..................................");
@@ -287,14 +244,6 @@ void cocos_entry(const char *name, void *handle)
     //HOOK启动函数
     MS(handle, "_ZN11AppDelegate29applicationDidFinishLaunchingEv", applicationDidFinishLaunching);
 
-    MS(handle, "_ZN5ycRes21makeImageWithFilenameEPKc", makeImageWithFilename);
-    MS(handle, "_ZN5ycRes11getFileDataEPKcPi", ycRes_getFileData);
-    MS(handle, "_ZN5ycRes6createE7resTypePKcS2_S2_", ycRes_create);
-    MS(handle, "_ZN6ycPack11extractFileEPKcP6ycFileS1_", ycPack_extractFile);
-    //MS(handle, "_ZN10ycFunction11getFileDataEPKcb", ycFunction_getFileData);
-    //MS(handle, "_ZN7cocos2d5extra6Crypto7bin2hexEPhi", bin2hex);
-    MS(handle, "_ZN6ycPack4initE8packTypePKcPh", ycPack_init);
-
     if (G_HookConfig->dump_lua)
     {
         /* lua func */
@@ -319,8 +268,10 @@ void cocos_entry(const char *name, void *handle)
 
     if (G_HookConfig->dump_res1)
     {
-        MS(handle, "_ZN7cocos2d5Image12detectFormatEPKhi", detectFormat);
-        MS(handle, "_ZN7cocos2d6Sprite6createERKSs", Sprite_create);
+        if (!MS(handle, "_ZN7cocos2d5Image12detectFormatEPKhi", detectFormat))
+            MS(handle, "_ZN7cocos2d5Image12detectFormatEPKhl", detectFormat);
+        if (!MS(handle, "_ZN7cocos2d6Sprite6createERKSs", Sprite_create))
+            MS(handle, "_ZN7cocos2d6Sprite6createEv", Sprite_create);
     }
 
     if (G_HookConfig->dump_res2)
