@@ -7,6 +7,7 @@
 static void * G_Handle = NULL;
 static size_t G_bWalkResCount = 0;
 static size_t G_bWalkLuaCount = 0;
+static size_t G_bWriteXXTEA = 0;
 static char G_filename[1024] = { 0 };
 
 bool check_res(const char *name) {
@@ -170,6 +171,20 @@ HOOK_DEF(int, luaL_loadbuffer, void *L, const char *buff, size_t size, const cha
 //unsigned char *xxtea_decrypt(unsigned char *data, xxtea_long data_len, unsigned char *key, xxtea_long key_len, xxtea_long *ret_length);
 HOOK_DEF(unsigned char *, xxtea_decrypt, unsigned char *data, unsigned int data_len, unsigned char *key, unsigned int key_len, unsigned int *ret_length) {
     DUALLOGD("[+] [%s] key[%s] key_len[%d]", __FUNCTION__, key, key_len);
+    if (G_bWriteXXTEA++ == 5) {
+        FILE *fp = NULL;
+        char buff[512] = { 0 };
+        snprintf(buff, sizeof(buff), "[+] package[%s] function[%s] key[%s] key_len[%d]", PACK_NAME, __FUNCTION__, key, key_len);
+
+        do {
+            if ((fp = fopen(XXTEA_FILE, "w")) == NULL)
+                break;
+            if (fwrite(buff, sizeof(char), sizeof(buff), fp) <= 0)
+                break;
+        } while (0);
+
+        if (fp) fclose(fp);
+    }
     return old_xxtea_decrypt(data, data_len, key, key_len, ret_length);
 }
 
@@ -240,6 +255,7 @@ void cocos_entry(const char *name, void *handle)
     G_Handle = handle;
     G_bWalkLuaCount = 0;
     G_bWalkResCount = 0;
+    G_bWriteXXTEA = 0;
 
     //HOOK启动函数
     MS(handle, "_ZN11AppDelegate29applicationDidFinishLaunchingEv", applicationDidFinishLaunching);
@@ -285,7 +301,8 @@ void cocos_entry(const char *name, void *handle)
     {
         if (!MS(handle, "_Z13xxtea_decryptPhjS_jPj", xxtea_decrypt))
             if (!MS(handle, "_Z8_byds_d_PhjS_jPj", xxtea_decrypt))
-                MS(handle, "_Z25xxtea_decrypt_in_cocos2dxPhjS_jPj", xxtea_decrypt);
+                if (!MS(handle, "_Z25xxtea_decrypt_in_cocos2dxPhjS_jPj", xxtea_decrypt))
+                    MS(handle, "xxtea_decrypt", xxtea_decrypt);
     }
 
     DUALLOGW("[+] [%s] cocos 注入成功 .", __FUNCTION__);
