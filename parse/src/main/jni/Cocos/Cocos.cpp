@@ -171,13 +171,15 @@ HOOK_DEF(int, luaL_loadbuffer, void *L, const char *buff, size_t size, const cha
 //unsigned char *xxtea_decrypt(unsigned char *data, xxtea_long data_len, unsigned char *key, xxtea_long key_len, xxtea_long *ret_length);
 HOOK_DEF(unsigned char *, xxtea_decrypt, unsigned char *data, unsigned int data_len, unsigned char *key, unsigned int key_len, unsigned int *ret_length) {
     DUALLOGD("[+] [%s] key[%s] key_len[%d]", __FUNCTION__, key, key_len);
-    if (G_bWriteXXTEA++ == 5) {
+    //if (G_bWriteXXTEA++ == 5)
+    {
+        const char *mode = G_bWriteXXTEA++ == 0 ? "w" : "a+";
         FILE *fp = NULL;
         char buff[512] = { 0 };
-        snprintf(buff, sizeof(buff), "[+] package[%s] function[%s] key[%s] key_len[%d]", PACK_NAME, __FUNCTION__, key, key_len);
+        snprintf(buff, sizeof(buff), "[+] package[%s] function[%s] key[%s] key_len[%d]\n", PACK_NAME, __FUNCTION__, key, key_len);
 
         do {
-            if ((fp = fopen(XXTEA_FILE, "w")) == NULL)
+            if ((fp = fopen(XXTEA_FILE, mode)) == NULL)
                 break;
             if (fwrite(buff, sizeof(char), sizeof(buff), fp) <= 0)
                 break;
