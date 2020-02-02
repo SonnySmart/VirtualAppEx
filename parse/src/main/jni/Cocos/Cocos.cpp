@@ -295,9 +295,9 @@ void cocos_entry(const char *name, void *handle)
 #if 1
         unsigned long symbol = 0;
         symbol = (unsigned long)handle + 0x548E74;
-        MSHookFunction((void *)(symbol | 0x1), reinterpret_cast<void *>(NEW_FUNC(detectFormat)), reinterpret_cast<void **>(&OLD_FUNC(detectFormat)));
-        //symbol = (unsigned long)handle + 0x81F19C;
-        //MSHookFunction((void *)(symbol + 0), reinterpret_cast<void *>(NEW_FUNC(Sprite_create)), reinterpret_cast<void **>(&OLD_FUNC(Sprite_create)));
+        G_WInlineHookFunction((void *)(symbol), reinterpret_cast<void *>(NEW_FUNC(detectFormat)), reinterpret_cast<void **>(&OLD_FUNC(detectFormat)));
+        symbol = (unsigned long)handle + 0x81F19C;
+        G_WInlineHookFunction((void *)(symbol), reinterpret_cast<void *>(NEW_FUNC(Sprite_create)), reinterpret_cast<void **>(&OLD_FUNC(Sprite_create)));
 #endif
     }
 
@@ -316,7 +316,7 @@ void cocos_entry(const char *name, void *handle)
                     MS(handle, "xxtea_decrypt", xxtea_decrypt);
     }
 
-#if 0
+#if 1
     start_dump();
 #endif
 

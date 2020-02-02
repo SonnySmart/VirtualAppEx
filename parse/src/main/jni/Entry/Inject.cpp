@@ -140,6 +140,13 @@ JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved)
 
         hook_dlopen(get_sdk_level());
 
+#if WHALE
+        //libwhale.so
+        void *handle = dlopen("libwhale.so", RTLD_LAZY | RTLD_NOW);
+        G_WInlineHookFunction = (ptr_WInlineHookFunction)dlsym(handle, "WInlineHookFunction");
+        DUALLOGD("G_WInlineHookFunction[%p]", G_WInlineHookFunction);
+#endif
+
         DUALLOGD("[+] [%s] hook_dlopen finish .", __FUNCTION__);
 	} while (0);
 

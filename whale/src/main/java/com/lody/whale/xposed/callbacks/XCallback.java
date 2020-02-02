@@ -2,6 +2,8 @@ package com.lody.whale.xposed.callbacks;
 
 import android.os.Bundle;
 
+import com.lody.whale.xposed.XposedBridge;
+
 import java.io.Serializable;
 
 
@@ -52,6 +54,11 @@ public abstract class XCallback implements Comparable<XCallback> {
          */
         protected Param() {
             callbacks = null;
+        }
+
+        /** @hide */
+        protected Param(XposedBridge.CopyOnWriteSortedSet<? extends XCallback> callbacks) {
+            this.callbacks = callbacks.getSnapshot();
         }
 
         /**
@@ -152,3 +159,4 @@ public abstract class XCallback implements Comparable<XCallback> {
      */
     public static final int PRIORITY_HIGHEST = 10000;
 }
+
