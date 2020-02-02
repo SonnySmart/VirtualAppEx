@@ -125,6 +125,8 @@ class ArtRuntime final {
 
     ptr_t CloneArtObject(ptr_t art_object);
 
+    void FixBugN();
+
  private:
     JavaVM *vm_;
     jclass java_class_;
@@ -137,6 +139,7 @@ class ArtRuntime final {
     ClassLinkerObjects class_linker_objects_;
     ArtMethodOffsets method_offset_;
     std::map<jmethodID, ArtHookParam *> hooked_method_map_;
+    pthread_mutex_t mutex;
 
     bool EnforceDisableHiddenAPIPolicyImpl();
 

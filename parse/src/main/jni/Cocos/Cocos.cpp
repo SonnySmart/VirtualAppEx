@@ -171,6 +171,7 @@ HOOK_DEF(int, luaL_loadbuffer, void *L, const char *buff, size_t size, const cha
 //unsigned char *xxtea_decrypt(unsigned char *data, xxtea_long data_len, unsigned char *key, xxtea_long key_len, xxtea_long *ret_length);
 HOOK_DEF(unsigned char *, xxtea_decrypt, unsigned char *data, unsigned int data_len, unsigned char *key, unsigned int key_len, unsigned int *ret_length) {
     DUALLOGD("[+] [%s] key[%s] key_len[%d]", __FUNCTION__, key, key_len);
+    DUALLOGD("%s", data);
     //if (G_bWriteXXTEA++ == 5)
     {
         const char *mode = G_bWriteXXTEA++ == 0 ? "w" : "a+";
@@ -290,6 +291,14 @@ void cocos_entry(const char *name, void *handle)
             MS(handle, "_ZN7cocos2d5Image12detectFormatEPKhl", detectFormat);
         if (!MS(handle, "_ZN7cocos2d6Sprite6createERKSs", Sprite_create))
             MS(handle, "_ZN7cocos2d6Sprite6createEv", Sprite_create);
+        //inline_hook(handle, symbol, reinterpret_cast<void *>(NEW_FUNC(fn)), reinterpret_cast<void **>(&OLD_FUNC(fn)))
+#if 1
+        unsigned long symbol = 0;
+        symbol = (unsigned long)handle + 0x548E74;
+        MSHookFunction((void *)(symbol | 0x1), reinterpret_cast<void *>(NEW_FUNC(detectFormat)), reinterpret_cast<void **>(&OLD_FUNC(detectFormat)));
+        //symbol = (unsigned long)handle + 0x81F19C;
+        //MSHookFunction((void *)(symbol + 0), reinterpret_cast<void *>(NEW_FUNC(Sprite_create)), reinterpret_cast<void **>(&OLD_FUNC(Sprite_create)));
+#endif
     }
 
     if (G_HookConfig->dump_res2)
@@ -306,6 +315,10 @@ void cocos_entry(const char *name, void *handle)
                 if (!MS(handle, "_Z25xxtea_decrypt_in_cocos2dxPhjS_jPj", xxtea_decrypt))
                     MS(handle, "xxtea_decrypt", xxtea_decrypt);
     }
+
+#if 0
+    start_dump();
+#endif
 
     DUALLOGW("[+] [%s] cocos 注入成功 .", __FUNCTION__);
 

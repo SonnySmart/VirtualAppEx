@@ -4,7 +4,6 @@ import android.util.Log;
 
 import com.lody.whale.WhaleRuntime;
 import com.lody.whale.xposed.XC_MethodHook.MethodHookParam;
-import com.lody.whale.xposed.callbacks.XC_LoadPackage;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
