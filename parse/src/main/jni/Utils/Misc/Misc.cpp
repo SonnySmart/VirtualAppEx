@@ -352,3 +352,7 @@ bool inline_hook(void *handle, const char *symbol_name, void *replace, void **re
 int findSymbol(const char *name, const char *libn, unsigned long *addr) {
     return find_name(getpid(), name, libn, addr);
 }
+
+int findLibBase(const char *libn, unsigned long *addr) {
+    return find_libbase(getpid(), libn, addr);
+}

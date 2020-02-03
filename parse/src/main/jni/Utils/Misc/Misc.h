@@ -30,5 +30,7 @@ const char *assets_name(const char *name, const char *tmp_path);
 bool inline_hook(void *handle, const char *symbol_name, void *replace, void **result);
 // findSymbol
 int findSymbol(const char *name, const char *libn, unsigned long *addr);
+// findLibBase
+int findLibBase(const char *libn, unsigned long *addr);
 
 #endif //__UTILS_MISC__

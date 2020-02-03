@@ -66,6 +66,7 @@ HOOK_DEF(void, Image, void *self) {
 
 //Sprite* Sprite::create(const std::string& filename)
 HOOK_DEF(void *, Sprite_create, const std::string& filename) {
+    DUALLOGD("+ [%s] filename[%s]", __FUNCTION__, filename.c_str());
     return old_Sprite_create(filename);
 }
 
@@ -252,6 +253,13 @@ HOOK_DEF(bool ,applicationDidFinishLaunching) {
     return ret;
 }
 
+//int Application::run()
+HOOK_DEF(int, Application_run, void *self) {
+    int ret = old_Application_run(self);
+    start_dump();
+    return ret;
+}
+
 void cocos_entry(const char *name, void *handle)
 {
     //toast("cocos 开始注入...");
@@ -261,7 +269,8 @@ void cocos_entry(const char *name, void *handle)
     G_bWriteXXTEA = 0;
 
     //HOOK启动函数
-    MS(handle, "_ZN11AppDelegate29applicationDidFinishLaunchingEv", applicationDidFinishLaunching);
+    //MS(handle, "_ZN11AppDelegate29applicationDidFinishLaunchingEv", applicationDidFinishLaunching);
+    MS(handle, "_ZN7cocos2d11Application3runEv", Application_run);
 
     if (G_HookConfig->dump_lua)
     {
@@ -293,11 +302,12 @@ void cocos_entry(const char *name, void *handle)
             MS(handle, "_ZN7cocos2d6Sprite6createEv", Sprite_create);
         //inline_hook(handle, symbol, reinterpret_cast<void *>(NEW_FUNC(fn)), reinterpret_cast<void **>(&OLD_FUNC(fn)))
 #if 1
+        unsigned long base = 0;
         unsigned long symbol = 0;
-        symbol = (unsigned long)handle + 0x548E74;
-        G_WInlineHookFunction((void *)(symbol), reinterpret_cast<void *>(NEW_FUNC(detectFormat)), reinterpret_cast<void **>(&OLD_FUNC(detectFormat)));
-        symbol = (unsigned long)handle + 0x81F19C;
-        G_WInlineHookFunction((void *)(symbol), reinterpret_cast<void *>(NEW_FUNC(Sprite_create)), reinterpret_cast<void **>(&OLD_FUNC(Sprite_create)));
+        findLibBase(HOOK_NAME, &base);
+        DUALLOGD("handle 0x[%x] base 0x[%x] symbol 0x[%x]", handle, base, symbol);
+        MS_THUMB(base, 0x00548E74, detectFormat);
+        MS_THUMB(base, 0x0052F0CC, Sprite_create);
 #endif
     }
 
@@ -315,10 +325,6 @@ void cocos_entry(const char *name, void *handle)
                 if (!MS(handle, "_Z25xxtea_decrypt_in_cocos2dxPhjS_jPj", xxtea_decrypt))
                     MS(handle, "xxtea_decrypt", xxtea_decrypt);
     }
-
-#if 1
-    start_dump();
-#endif
 
     DUALLOGW("[+] [%s] cocos 注入成功 .", __FUNCTION__);
 
