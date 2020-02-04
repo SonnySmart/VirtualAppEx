@@ -246,8 +246,8 @@ void start_dump() {
 extern void unshell_so_entry(const char *name, void *handle);
 
 //bool AppDelegate::applicationDidFinishLaunching()
-HOOK_DEF(bool ,applicationDidFinishLaunching) {
-    bool ret = old_applicationDidFinishLaunching();
+HOOK_DEF(bool ,applicationDidFinishLaunching, void *self) {
+    bool ret = old_applicationDidFinishLaunching(self);
     //unshell_so_entry(NULL, NULL);
     start_dump();
     return ret;
@@ -268,9 +268,11 @@ void cocos_entry(const char *name, void *handle)
     G_bWalkResCount = 0;
     G_bWriteXXTEA = 0;
 
+    unsigned long base = 0;
+    findLibBase(HOOK_NAME, &base);
+
     //HOOK启动函数
-    //MS(handle, "_ZN11AppDelegate29applicationDidFinishLaunchingEv", applicationDidFinishLaunching);
-    MS(handle, "_ZN7cocos2d11Application3runEv", Application_run);
+    //MS(handle, "_ZN7cocos2d11Application3runEv", Application_run);
 
     if (G_HookConfig->dump_lua)
     {
@@ -284,6 +286,10 @@ void cocos_entry(const char *name, void *handle)
         //MS(handle, "_ZN7cocos2d9LuaEngine11getInstanceEv", LuaEngine_getInstance);
         //MS(handle, "_ZN7cocos2d9LuaEngine17executeScriptFileEPKc", executeScriptFile);
         //if (old_LuaEngine_getInstance) old_LuaEngine_getInstance();
+#if 1
+        DUALLOGD("handle 0x[%x] base 0x[%x]", handle, base);
+        MS_THUMB(base, 0x388084, luaL_loadbuffer);
+#endif
     }
 
     if (G_HookConfig->dump_res)
@@ -300,12 +306,8 @@ void cocos_entry(const char *name, void *handle)
             MS(handle, "_ZN7cocos2d5Image12detectFormatEPKhl", detectFormat);
         if (!MS(handle, "_ZN7cocos2d6Sprite6createERKSs", Sprite_create))
             MS(handle, "_ZN7cocos2d6Sprite6createEv", Sprite_create);
-        //inline_hook(handle, symbol, reinterpret_cast<void *>(NEW_FUNC(fn)), reinterpret_cast<void **>(&OLD_FUNC(fn)))
 #if 1
-        unsigned long base = 0;
-        unsigned long symbol = 0;
-        findLibBase(HOOK_NAME, &base);
-        DUALLOGD("handle 0x[%x] base 0x[%x] symbol 0x[%x]", handle, base, symbol);
+        DUALLOGD("handle 0x[%x] base 0x[%x]", handle, base);
         MS_THUMB(base, 0x00548E74, detectFormat);
         MS_THUMB(base, 0x0052F0CC, Sprite_create);
 #endif
@@ -324,6 +326,10 @@ void cocos_entry(const char *name, void *handle)
             if (!MS(handle, "_Z8_byds_d_PhjS_jPj", xxtea_decrypt))
                 if (!MS(handle, "_Z25xxtea_decrypt_in_cocos2dxPhjS_jPj", xxtea_decrypt))
                     MS(handle, "xxtea_decrypt", xxtea_decrypt);
+#if 1
+        DUALLOGD("handle 0x[%x] base 0x[%x]", handle, base);
+        MS_THUMB(base, 0x321614, xxtea_decrypt);
+#endif
     }
 
     DUALLOGW("[+] [%s] cocos 注入成功 .", __FUNCTION__);
