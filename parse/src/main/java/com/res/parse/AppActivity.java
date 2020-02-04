@@ -3,6 +3,7 @@ package com.res.parse;
 import android.app.Activity;
 import android.os.Handler;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -99,6 +100,7 @@ public class AppActivity extends Activity {
                     @Override
                     public void onClick(View v) {
                         String appName = (String) ((TextView)v.findViewById(R.id.tv_app_name)).getText();
+                        Log.d(AppActivity.class.getSimpleName(), String.format("appName: %s", appName));
                         MainActivity.Instance.setPackageString(appName);
                         //Toast.makeText(getApplicationContext(), appName, Toast.LENGTH_LONG).show();
                         AppActivity.this.finish();

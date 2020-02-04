@@ -224,6 +224,13 @@ WALK_FUNC(loadChunksFromZIP) {
     if (old_loadChunksFromZIP && G_LuaStack) old_loadChunksFromZIP(G_LuaStack, name);
 }
 
+//int get_string_for_print(lua_State * L, std::string* out)
+HOOK_DEF(int, get_string_for_print, void *L, std::string* out) {
+    int ret = old_get_string_for_print(L, out);
+    DUALLOGI("Cocos2dLog[%s]", out->c_str());
+    return ret;
+}
+
 void start_dump() {
     if (G_HookConfig->dump_lua && G_bWalkLuaCount == 0) {
         DUALLOGD("开始..................................");
@@ -274,6 +281,9 @@ void cocos_entry(const char *name, void *handle)
     //HOOK启动函数
     //MS(handle, "_ZN7cocos2d11Application3runEv", Application_run);
 
+    //Log函数
+    //MS_THUMB(base, 0x53AE18, get_string_for_print);
+
     if (G_HookConfig->dump_lua)
     {
         /* lua func */
@@ -286,7 +296,7 @@ void cocos_entry(const char *name, void *handle)
         //MS(handle, "_ZN7cocos2d9LuaEngine11getInstanceEv", LuaEngine_getInstance);
         //MS(handle, "_ZN7cocos2d9LuaEngine17executeScriptFileEPKc", executeScriptFile);
         //if (old_LuaEngine_getInstance) old_LuaEngine_getInstance();
-#if 1
+#if 0
         DUALLOGD("handle 0x[%x] base 0x[%x]", handle, base);
         MS_THUMB(base, 0x388084, luaL_loadbuffer);
 #endif
@@ -306,7 +316,7 @@ void cocos_entry(const char *name, void *handle)
             MS(handle, "_ZN7cocos2d5Image12detectFormatEPKhl", detectFormat);
         if (!MS(handle, "_ZN7cocos2d6Sprite6createERKSs", Sprite_create))
             MS(handle, "_ZN7cocos2d6Sprite6createEv", Sprite_create);
-#if 1
+#if 0
         DUALLOGD("handle 0x[%x] base 0x[%x]", handle, base);
         MS_THUMB(base, 0x00548E74, detectFormat);
         MS_THUMB(base, 0x0052F0CC, Sprite_create);
@@ -326,7 +336,7 @@ void cocos_entry(const char *name, void *handle)
             if (!MS(handle, "_Z8_byds_d_PhjS_jPj", xxtea_decrypt))
                 if (!MS(handle, "_Z25xxtea_decrypt_in_cocos2dxPhjS_jPj", xxtea_decrypt))
                     MS(handle, "xxtea_decrypt", xxtea_decrypt);
-#if 1
+#if 0
         DUALLOGD("handle 0x[%x] base 0x[%x]", handle, base);
         MS_THUMB(base, 0x321614, xxtea_decrypt);
 #endif
