@@ -99,10 +99,12 @@ public class AppActivity extends Activity {
                 convertView.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        String appName = (String) ((TextView)v.findViewById(R.id.tv_app_name)).getText();
+                        final String appName = (String) ((TextView)v.findViewById(R.id.tv_app_name)).getText();
                         Log.d(AppActivity.class.getSimpleName(), String.format("appName: %s", appName));
-                        MainActivity.Instance.setPackageString(appName);
                         //Toast.makeText(getApplicationContext(), appName, Toast.LENGTH_LONG).show();
+
+                        MainActivity.Instance.setPackageString(appName);
+
                         AppActivity.this.finish();
                     }
                 });

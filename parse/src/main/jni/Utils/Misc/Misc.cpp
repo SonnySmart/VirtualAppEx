@@ -274,9 +274,9 @@ int replace_buffer(const char *root, const char *name, const std::vector<std::st
 
     for(auto i = r.begin(); i != r.end(); ++i) {
         const char *filename = (*i).c_str();
-
+        //注入文件全路径
         std::string s(root);
-        const char *fullpath = s.append("/").append(name).c_str();
+        const char *fullpath = s.append("/").append(filename).c_str();
 
         if (access(fullpath, F_OK) != 0 || strstr(name, filename) == NULL)
             continue;

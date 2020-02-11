@@ -57,13 +57,14 @@ public class MainActivity extends Activity {
         so_list.add("libcocos2djs.so");
     }
 
-    public void setPackageString(String packageString) {
+    public void setPackageString(final String packageString) {
+
         et_inject_pckname.setText(packageString);
 
         ArrayList<String> ret = findAppLibs(packageString, new ArrayList<String>());
         for (String lib : ret)
         {
-            for (String s : so_list)
+            for (final String s : so_list)
             {
                 if (lib.contains(s))
                 {
@@ -88,6 +89,9 @@ public class MainActivity extends Activity {
         et_inject_pckname = findViewById(R.id.et_inject_pckname);
         et_hook_soname = findViewById(R.id.et_hook_soname);
         et_send_msg = findViewById(R.id.et_send_msg);
+        et_inject_pckname.setSaveEnabled(false);
+        et_hook_soname.setSaveEnabled(false);
+        et_send_msg.setSaveEnabled(false);
         bt_inject_pckname = findViewById(R.id.bt_inject_pckname);
         spinner_hook_soname = findViewById(R.id.spinner_hook_soname);
         check_dump_dll = findViewById(R.id.check_dump_dll);
