@@ -92,7 +92,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="打印 xxtea key" />
+            android:text="打印 xxtea key /sdcard/myhook/xxtea.txt" />
 
         <CheckBox
             android:id="@+id/check_dump_res"
@@ -116,11 +116,11 @@
             android:text="解密图片 Sprite::create 接口" />
 
         <CheckBox
-            android:id="@+id/check_dump_more"
+            android:id="@+id/check_dump_inject"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="预留" />
+            android:text="注入lua文件/sdcard/myhook/inject下" />
 
     </LinearLayout>
 

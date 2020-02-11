@@ -29,12 +29,14 @@ public class GlobalConfig {
     public static String Setting_Key_dump_res1 = "dump_res1";
     public static String Setting_Key_dump_res2 = "dump_res2";
     public static String Setting_Key_dump_xxtea = "dump_xxtea";
+    public static String Setting_Key_dump_inject = "dump_inject";
     public static String Setting_Key_send_msg = "send_msg";
 
     public static String Current_PackageName = "com.res.parse";         //当前的包名,供Xposed读取配置用
     public static String Log_TAG = "TestInject";
     public static String Setting_SaveFileName = "myhook/config.json";                    //保存的文件名,共框架so读取配置
     public static String Setting_TmpPath = "/sdcard/myhook/tmp";
+    public static String Setting_InjectPath = "/sdcard/myhook/inject";
 
     public static SharedPreferences mSharePreferences;
     public static SharedPreferences.Editor editor;
@@ -69,6 +71,7 @@ public class GlobalConfig {
         object.put(Setting_Key_dump_res1, getString(Setting_Key_dump_res1, ""));
         object.put(Setting_Key_dump_res2, getString(Setting_Key_dump_res2, ""));
         object.put(Setting_Key_dump_xxtea, getString(Setting_Key_dump_xxtea, ""));
+        object.put(Setting_Key_dump_inject, getString(Setting_Key_dump_inject, ""));
         object.put(Setting_Key_send_msg, getString(Setting_Key_send_msg, ""));
         return object.toString();
     }
@@ -91,6 +94,7 @@ public class GlobalConfig {
         putString(Setting_Key_dump_res1, object.getString(Setting_Key_dump_res1));
         putString(Setting_Key_dump_res2, object.getString(Setting_Key_dump_res2));
         putString(Setting_Key_dump_xxtea, object.getString(Setting_Key_dump_xxtea));
+        putString(Setting_Key_dump_inject, object.getString(Setting_Key_dump_inject));
         putString(Setting_Key_send_msg, object.getString(Setting_Key_send_msg));
         editor.commit();
     }

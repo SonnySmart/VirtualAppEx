@@ -35,6 +35,7 @@ public class MainActivity extends Activity {
     private CheckBox check_dump_res1;
     private CheckBox check_dump_res2;
     private CheckBox check_dump_xxtea;
+    private CheckBox check_dump_inject;
     private TextView tv_help;
 
     public static MainActivity Instance = null;
@@ -100,6 +101,7 @@ public class MainActivity extends Activity {
         check_dump_res1 = findViewById(R.id.check_dump_res1);
         check_dump_res2 = findViewById(R.id.check_dump_res2);
         check_dump_xxtea = findViewById(R.id.check_dump_xxtea);
+        check_dump_inject = findViewById(R.id.check_dump_inject);
         tv_help = findViewById(R.id.tv_help);
         btn_save = findViewById(R.id.btn_save);
         btn_start = findViewById(R.id.btn_start);
@@ -189,6 +191,7 @@ public class MainActivity extends Activity {
         check_dump_res1.setChecked(GlobalConfig.getString(GlobalConfig.Setting_Key_dump_res1, "").equals("1"));
         check_dump_res2.setChecked(GlobalConfig.getString(GlobalConfig.Setting_Key_dump_res2, "").equals("1"));
         check_dump_xxtea.setChecked(GlobalConfig.getString(GlobalConfig.Setting_Key_dump_xxtea, "").equals("1"));
+        check_dump_inject.setChecked(GlobalConfig.getString(GlobalConfig.Setting_Key_dump_inject, "").equals("1"));
 
         makeDir();
 
@@ -198,6 +201,9 @@ public class MainActivity extends Activity {
     void makeDir() {
         //创建文件夹
         File file = new File(GlobalConfig.Setting_TmpPath);
+        if (!file.exists())
+            file.mkdir();
+        file = new File(GlobalConfig.Setting_InjectPath);
         if (!file.exists())
             file.mkdir();
     }
@@ -260,6 +266,7 @@ public class MainActivity extends Activity {
             GlobalConfig.putString(GlobalConfig.Setting_Key_dump_res1, check_dump_res1.isChecked() ? "1" : "0");
             GlobalConfig.putString(GlobalConfig.Setting_Key_dump_res2, check_dump_res2.isChecked() ? "1" : "0");
             GlobalConfig.putString(GlobalConfig.Setting_Key_dump_xxtea, check_dump_xxtea.isChecked() ? "1" : "0");
+            GlobalConfig.putString(GlobalConfig.Setting_Key_dump_inject, check_dump_inject.isChecked() ? "1" : "0");
             editor.commit();
             GlobalConfig.writeSaveFile();
             Toast.makeText(MainActivity.this, "保存设置成功", Toast.LENGTH_SHORT).show();

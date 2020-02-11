@@ -69,6 +69,7 @@ typedef struct hook_config {
     bool dump_res1;
     bool dump_res2;
     bool dump_xxtea;
+    bool dump_inject;
 } *ptr_hook_config;
 
 typedef void (*ptr_WInlineHookFunction)(void *address, void *replace, void **backup);

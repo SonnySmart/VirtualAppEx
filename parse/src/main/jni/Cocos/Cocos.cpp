@@ -153,37 +153,38 @@ HOOK_DEF(void *, LuaEngine_getInstance) {
     return old_LuaEngine_getInstance();
 }
 
-#define INJECT_LUA
 //int (luaL_loadbuffer) (lua_State *L, const char *buff, size_t sz, const char *name);
 HOOK_DEF(int, luaL_loadbuffer, void *L, const char *buff, size_t size, const char *name) {
     DUALLOGD("[+] [%s] L[%p] buff[%p] size[%d] name[%s]", __FUNCTION__, L, buff, size, name);
 
-#ifdef INJECT_LUA
-    void *out_buffer = NULL;
-    size_t out_len = 0;
-    std::vector<std::string> r {
-        "/RedEnvelopeLayer.lua",
-        "/GameLayer.lua",
-        "/GameViewLayer.lua",
-        //"/functions.lua",
-        //"/GameFrameEngine.lua"
-    };
-    if (replace_buffer(INJECT_PATH, name, r, out_buffer, out_len) == 0) {
-        DUALLOGD("注入lua[%s]成功", name);
-    }
-#endif
 #if 0
     call_stack();
 #endif
 
-    if (strstr(name, TEMP_PATH) && buff && size > 0)
-        dump_write(PACK_NAME, ASSET_PATH, ASSET_NAME(name), buff, size);
-#ifdef INJECT_LUA
-    if (out_buffer && out_len > 0) return old_luaL_loadbuffer(L, (const char *)out_buffer, out_len, name);
-    return old_luaL_loadbuffer(L, buff, size, name);
-#else
-    return old_luaL_loadbuffer(L, buff, size, name);
-#endif
+    if (G_HookConfig->dump_lua) {
+        if (strstr(name, TEMP_PATH) && buff && size > 0)
+            dump_write(PACK_NAME, ASSET_PATH, ASSET_NAME(name), buff, size);
+    }
+
+    if (G_HookConfig->dump_inject) {
+        void *out_buffer = NULL;
+        size_t out_len = 0;
+        std::vector<std::string> r {
+                "/RedEnvelopeLayer.lua",
+                "/GameLayer.lua",
+                "/GameViewLayer.lua",
+                //"/functions.lua",
+                //"/GameFrameEngine.lua"
+        };
+        if (replace_buffer(INJECT_PATH, name, r, out_buffer, out_len) == 0) {
+            DUALLOGD("注入lua[%s]成功", name);
+        }
+        if (out_buffer && out_len > 0) return old_luaL_loadbuffer(L, (const char *)out_buffer, out_len, name);
+        return old_luaL_loadbuffer(L, buff, size, name);
+    }
+    else {
+        return old_luaL_loadbuffer(L, buff, size, name);
+    }
 }
 
 /* lua dump end */
@@ -191,13 +192,15 @@ HOOK_DEF(int, luaL_loadbuffer, void *L, const char *buff, size_t size, const cha
 //unsigned char *xxtea_decrypt(unsigned char *data, xxtea_long data_len, unsigned char *key, xxtea_long key_len, xxtea_long *ret_length);
 HOOK_DEF(unsigned char *, xxtea_decrypt, unsigned char *data, unsigned int data_len, unsigned char *key, unsigned int key_len, unsigned int *ret_length) {
     DUALLOGD("[+] [%s] key[%s] key_len[%d]", __FUNCTION__, key, key_len);
-    DUALLOGD("%s", data);
+    //DUALLOGD("%s", data);
     //if (G_bWriteXXTEA++ == 5)
     {
         const char *mode = G_bWriteXXTEA++ == 0 ? "w" : "a+";
         FILE *fp = NULL;
         char buff[512] = { 0 };
-        snprintf(buff, sizeof(buff), "[+] package[%s] function[%s] key[%s] key_len[%d]\n", PACK_NAME, __FUNCTION__, key, key_len);
+        char keybuff[128] = { 0 };
+        memcpy(keybuff, key, key_len);
+        snprintf(buff, sizeof(buff), "[+] package[%s] xxtea key[%s] key_len[%d]\n", PACK_NAME, keybuff, key_len);
 
         do {
             if ((fp = fopen(XXTEA_FILE, mode)) == NULL)
@@ -286,6 +289,7 @@ HOOK_DEF(int, Application_run, void *self) {
     return ret;
 }
 
+//#define SELL
 void cocos_entry(const char *name, void *handle)
 {
     //toast("cocos 开始注入...");
@@ -297,11 +301,13 @@ void cocos_entry(const char *name, void *handle)
     unsigned long base = 0;
     findLibBase(HOOK_NAME, &base);
 
+#ifdef SELL
+    //HOOK启动函数
+    MS(handle, "_ZN11AppDelegate29applicationDidFinishLaunchingEv", applicationDidFinishLaunching);
+#else
     //HOOK启动函数
     MS(handle, "_ZN7cocos2d11Application3runEv", Application_run);
-
-    //Log函数
-    //MS_THUMB(base, 0x53AE18, get_string_for_print);
+#endif
 
     if (G_HookConfig->dump_lua)
     {
@@ -359,6 +365,11 @@ void cocos_entry(const char *name, void *handle)
         DUALLOGD("handle 0x[%x] base 0x[%x]", handle, base);
         MS_THUMB(base, 0x321614, xxtea_decrypt);
 #endif
+    }
+
+    if (G_HookConfig->dump_inject)
+    {
+        MS(handle, "luaL_loadbuffer", luaL_loadbuffer);
     }
 
     DUALLOGW("[+] [%s] cocos 注入成功 .", __FUNCTION__);

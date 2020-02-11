@@ -167,6 +167,7 @@ extern "C" bool loadConfig()
     std::string dump_res1;
     std::string dump_res2;
     std::string dump_xxtea;
+    std::string dump_inject;
 	G_HookConfig = new hook_config();
 	CJsonObject *json = new CJsonObject(jsonString);
 	json->Get("pack_name", G_HookConfig->pack_name);
@@ -177,6 +178,7 @@ extern "C" bool loadConfig()
     json->Get("dump_res1", dump_res1);
     json->Get("dump_res2", dump_res2);
     json->Get("dump_xxtea", dump_xxtea);
+    json->Get("dump_inject", dump_inject);
 	delete json;
 
 	G_HookConfig->dump_lua = dump_lua == "1";
@@ -185,6 +187,7 @@ extern "C" bool loadConfig()
     G_HookConfig->dump_res1 = dump_res1 == "1";
     G_HookConfig->dump_res2 = dump_res2 == "1";
     G_HookConfig->dump_xxtea = dump_xxtea == "1";
+    G_HookConfig->dump_inject = dump_inject == "1";
 
     return true;
 }
