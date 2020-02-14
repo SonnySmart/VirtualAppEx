@@ -42,6 +42,7 @@
 #define INJECT_PATH "/sdcard/myhook/inject"
 #define LOG_FILE "/sdcard/myhook/log.txt"
 #define XXTEA_FILE "/sdcard/myhook/xxtea.txt"
+#define AES_FILE "/sdcard/myhook/aes.txt"
 #define ASSET_NAME(name) assets_name(name, TEMP_PATH)
 #define PACK_NAME G_HookConfig->pack_name.c_str()
 #define HOOK_NAME G_HookConfig->hook_name.c_str()

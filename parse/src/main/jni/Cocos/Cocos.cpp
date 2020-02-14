@@ -8,6 +8,7 @@ static void * G_Handle = NULL;
 static size_t G_bWalkResCount = 0;
 static size_t G_bWalkLuaCount = 0;
 static size_t G_bWriteXXTEA = 0;
+static size_t G_bWriteAES = 0;
 static char G_filename[1024] = { 0 };
 
 bool check_res(const char *name) {
@@ -214,6 +215,36 @@ HOOK_DEF(unsigned char *, xxtea_decrypt, unsigned char *data, unsigned int data_
     return old_xxtea_decrypt(data, data_len, key, key_len, ret_length);
 }
 
+//static void DecryptData(uint8_t *contents, uint32_t num_bytes, const aes_key &key);
+HOOK_DEF(void, DecryptData, uint8_t *contents, uint32_t num_bytes, const std::array<unsigned char, 32> &key) {
+    {
+        const char *mode = G_bWriteAES++ == 0 ? "w" : "a+";
+        FILE *fp = NULL;
+        char buff[512] = { 0 };
+        char keybuff[128] = { 0 };
+        char hexbuff[256] = { 0 };
+        char *pHexPint = hexbuff;
+        std::string s(key.begin(), key.end());
+        size_t key_len = strlen(s.c_str());
+        memcpy(keybuff, s.c_str(), key_len);
+        for (int i = 0; i < key_len; ++i) {
+            int ret = snprintf(pHexPint, sizeof(hexbuff), "0x%x, ", keybuff[i]);
+            if (ret > 0) pHexPint += ret;
+        }
+        snprintf(buff, sizeof(buff), "[+] package[%s] aes key[%s] hex[%s] key_len[%d]\n", PACK_NAME, keybuff, hexbuff, key_len);
+
+        do {
+            if ((fp = fopen(AES_FILE, mode)) == NULL)
+                break;
+            if (fwrite(buff, sizeof(char), sizeof(buff), fp) <= 0)
+                break;
+        } while (0);
+
+        if (fp) fclose(fp);
+    }
+    return old_DecryptData(contents, num_bytes, key);
+}
+
 void *G_LuaStack = NULL;
 //static LuaStack *create(void);
 HOOK_DEF(void *, LuaStack_create) {
@@ -289,7 +320,7 @@ HOOK_DEF(int, Application_run, void *self) {
     return ret;
 }
 
-//#define SELL
+#define SELL
 void cocos_entry(const char *name, void *handle)
 {
     //toast("cocos 开始注入...");
@@ -297,6 +328,7 @@ void cocos_entry(const char *name, void *handle)
     G_bWalkLuaCount = 0;
     G_bWalkResCount = 0;
     G_bWriteXXTEA = 0;
+    G_bWriteAES = 0;
 
     unsigned long base = 0;
     findLibBase(HOOK_NAME, &base);
@@ -358,6 +390,7 @@ void cocos_entry(const char *name, void *handle)
 
     if (G_HookConfig->dump_xxtea)
     {
+        MS(handle, "_ZN3ext3AES11DecryptDataEPhjRKSt5arrayIhLj32EE", DecryptData);
         if (!MS(handle, "_Z13xxtea_decryptPhjS_jPj", xxtea_decrypt))
             if (!MS(handle, "_Z8_byds_d_PhjS_jPj", xxtea_decrypt))
                 if (!MS(handle, "_Z25xxtea_decrypt_in_cocos2dxPhjS_jPj", xxtea_decrypt))
