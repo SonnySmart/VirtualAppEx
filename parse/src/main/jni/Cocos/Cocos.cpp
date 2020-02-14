@@ -303,6 +303,7 @@ void cocos_entry(const char *name, void *handle)
 
 #ifdef SELL
     //HOOK启动函数
+    //_ZN11AppDelegate29applicationDidFinishLaunchingEv
     MS(handle, "_ZN11AppDelegate29applicationDidFinishLaunchingEv", applicationDidFinishLaunching);
 #else
     //HOOK启动函数

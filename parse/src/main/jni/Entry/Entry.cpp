@@ -28,7 +28,7 @@ extern "C" void hook_entry(const char *name, void *handle)
             DUALLOGE("[-] [%s] handle[%p] dlerrpr[%s]", __FUNCTION__, handle, dlerror());
         }
         //_ZN7cocos2d14cocos2dVersionEv
-#if 1
+#if 0
         if (1)
 #else
         if ((symbol = dlsym(handle, "_ZN7cocos2d14cocos2dVersionEv")))
