@@ -171,12 +171,14 @@ HOOK_DEF(int, luaL_loadbuffer, void *L, const char *buff, size_t size, const cha
         size_t out_len = 0;
         std::vector<std::string> r {
                 "/RedEnvelopeLayer.lua",
-                "/GameLayer.lua",
-                "/GameViewLayer.lua",
+                "longfengdou/src/views/layer/GameViewLayer.lua",
+                "baccaratnew/src/views/layer/GameViewLayer.lua",
+                "tuitongzi/src/views/layer/GameViewLayer.lua",
+                "oxbattle/src/views/layer/GameViewLayer.lua",
+                "luxurycar/src/views/layer/GameViewLayer.lua",
                 //"/functions.lua",
-                //"/GameFrameEngine.lua"
         };
-        if (replace_buffer(INJECT_PATH, name, r, out_buffer, out_len) == 0) {
+        if (replace_buffer(std::string(INJECT_PATH).append("/").append(PACK_NAME).c_str(), name, r, out_buffer, out_len) == 0) {
             DUALLOGD("注入lua[%s]成功", name);
         }
         if (out_buffer && out_len > 0) return old_luaL_loadbuffer(L, (const char *)out_buffer, out_len, name);
