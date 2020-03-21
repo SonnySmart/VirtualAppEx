@@ -23,7 +23,7 @@ void mkdirs(const std::string &dir);
 // dump lua
 int dump_write(const char *pack, const char *path, const char *name, const char *buff, const size_t &len);
 // replace lua
-int replace_buffer(const char *root, const char *name, const std::vector<std::string> &r, void *&out_buffer, size_t &out_len);
+int replace_buffer(const char *root, const char *name, std::vector<std::string> &r, void *&out_buffer, size_t &out_len);
 // 获取存储asset路径
 const char *assets_name(const char *name, const char *tmp_path);
 // inline_hook

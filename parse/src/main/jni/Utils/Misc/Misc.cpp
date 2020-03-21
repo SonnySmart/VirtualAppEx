@@ -267,17 +267,18 @@ int dump_write(const char *pack, const char *path, const char *name, const char 
     return -4;
 }
 
-int replace_buffer(const char *root, const char *name, const std::vector<std::string> &r, void *&out_buffer, size_t &out_len)
+int replace_buffer(const char *root, const char *name, std::vector<std::string> &r, void *&out_buffer, size_t &out_len)
 {
-    if (strlen(name) == 0 || r.size() ==0)
+    if (strlen(root) == 0 || strlen(name) == 0)
         return -1;
 
-    for(auto i = r.begin(); i != r.end(); ++i) {
-        const char *filename = (*i).c_str();
-        //注入文件全路径
-        std::string s(root);
-        const char *fullpath = s.append("/").append(filename).c_str();
+    if (r.size() == 0) dirwalk(root, r);
 
+    for(auto i = r.begin(); i != r.end(); ++i) {
+        const char *fullpath = (*i).c_str();
+        const char *filename = assets_name(fullpath, root);
+        //DUALLOGD("[+] filename[%s]", filename.c_str());
+        //文件不存在 | 文件不匹配
         if (access(fullpath, F_OK) != 0 || strstr(name, filename) == NULL)
             continue;
 

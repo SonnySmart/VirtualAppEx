@@ -9,6 +9,7 @@ static size_t G_bWalkResCount = 0;
 static size_t G_bWalkLuaCount = 0;
 static size_t G_bWriteXXTEA = 0;
 static char G_filename[1024] = { 0 };
+static std::vector<std::string> G_injectFiles;
 
 bool check_res(const char *name) {
     return strstr(name, "/res/");
@@ -70,6 +71,10 @@ HOOK_DEF(void *, Sprite_create, const std::string& filename) {
     return old_Sprite_create(filename);
 }
 
+HOOK_DEF(void *, Sprite_create_, const char *filename) {
+    return old_Sprite_create_(filename);
+}
+
 WALK_FUNC(Image) {
     if (check_lua(name))
         return;
@@ -80,6 +85,18 @@ WALK_FUNC(Image) {
     DUALLOGD("filename[%s]", G_filename);
 
     if (old_Sprite_create) old_Sprite_create(G_filename);
+    if (old_Sprite_create_) old_Sprite_create_(G_filename);
+}
+
+//bool Image::initWithImageData(const unsigned char * data, ssize_t dataLen)
+HOOK_DEF(bool, initWithImageData, void *self, const unsigned char * data, ssize_t dataLen, int a4) {
+    bool ret = old_initWithImageData(self, data, dataLen, a4);
+    DUALLOGD("ret[%s] G_filename[%s] data[%p] dataLen[%d]", ret ? "true" : "false", G_filename, data, dataLen);
+    if (ret && strstr(G_filename, TEMP_PATH) && data && dataLen > 0)
+    {
+        dump_write(PACK_NAME, ASSET_PATH, ASSET_NAME(G_filename), (const char *)data, dataLen);
+    }
+    return ret;
 }
 
 //Image::Format Image::detectFormat(const unsigned char * data, ssize_t dataLen)
@@ -87,6 +104,7 @@ HOOK_DEF(int, detectFormat, void *self, const unsigned char * data, ssize_t data
     DUALLOGD("[+] [%s] data[%p] len[%d] name[%s]", __FUNCTION__, data, dataLen, G_filename);
 
     if (strstr(G_filename, TEMP_PATH) && data && dataLen > 0)
+    //if (!check_png(G_filename) && strstr(G_filename, TEMP_PATH) && data && dataLen > 0)
     {
 #if 1
         dump_write(PACK_NAME, ASSET_PATH, ASSET_NAME(G_filename), (const char *)data, dataLen);
@@ -98,6 +116,17 @@ HOOK_DEF(int, detectFormat, void *self, const unsigned char * data, ssize_t data
     }
 
     return old_detectFormat(self, data, dataLen);
+}
+
+//cocos2d::CCImage::initWithImageData(void *, int, cocos2d::EImageFormat, int, int, int)
+//.text:001C5E38                 EXPORT _ZN7cocos2d7CCImage17initWithImageDataEPviNS_12EImageFormatEiii
+HOOK_DEF(bool, _initWithImageData, void *self, void * data, int dataLen, int a4, int a5, int a6) {
+    DUALLOGD("[+] data[%p] len[%d] a4[%d] a5[%d] a6[%d]", data, dataLen, a4, a5, a6);
+    if (strstr(G_filename, TEMP_PATH) && data && dataLen > 0)
+    {
+        dump_write(PACK_NAME, ASSET_PATH, ASSET_NAME(G_filename), (const char *)data, dataLen);
+    }
+    return old__initWithImageData(self, data, dataLen, a4, a5, a6);
 }
 
 /* res dump end */
@@ -162,6 +191,7 @@ HOOK_DEF(int, luaL_loadbuffer, void *L, const char *buff, size_t size, const cha
 #endif
 
     if (G_HookConfig->dump_lua) {
+        //if (buff && size > 0)
         if (strstr(name, TEMP_PATH) && buff && size > 0)
             dump_write(PACK_NAME, ASSET_PATH, ASSET_NAME(name), buff, size);
     }
@@ -169,16 +199,7 @@ HOOK_DEF(int, luaL_loadbuffer, void *L, const char *buff, size_t size, const cha
     if (G_HookConfig->dump_inject) {
         void *out_buffer = NULL;
         size_t out_len = 0;
-        std::vector<std::string> r {
-                "/RedEnvelopeLayer.lua",
-                "longfengdou/src/views/layer/GameViewLayer.lua",
-                "baccaratnew/src/views/layer/GameViewLayer.lua",
-                "tuitongzi/src/views/layer/GameViewLayer.lua",
-                "oxbattle/src/views/layer/GameViewLayer.lua",
-                "luxurycar/src/views/layer/GameViewLayer.lua",
-                //"/functions.lua",
-        };
-        if (replace_buffer(std::string(INJECT_PATH).append("/").append(PACK_NAME).c_str(), name, r, out_buffer, out_len) == 0) {
+        if (replace_buffer(std::string(INJECT_PATH).append("/").append(PACK_NAME).c_str(), name, G_injectFiles, out_buffer, out_len) == 0) {
             DUALLOGD("注入lua[%s]成功", name);
         }
         if (out_buffer && out_len > 0) return old_luaL_loadbuffer(L, (const char *)out_buffer, out_len, name);
@@ -187,6 +208,27 @@ HOOK_DEF(int, luaL_loadbuffer, void *L, const char *buff, size_t size, const cha
     else {
         return old_luaL_loadbuffer(L, buff, size, name);
     }
+}
+
+//LUALIB_API int luaL_loadbufferx (lua_State *L, const char *buff, size_t size, const char *name, const char *mode)
+HOOK_DEF(int, luaL_loadbufferx, void *L, const char *buff, size_t size, const char *name, const char *mode) {
+    DUALLOGD("[+] [%s] L[%p] buff[%s] size[%d] name[%s]", __FUNCTION__, L, buff, size, name);
+    return old_luaL_loadbufferx(L, buff, size, name, mode);
+}
+
+typedef const char * (*lua_Reader) (void *L, void *ud, size_t *sz);
+typedef struct LoadS {
+    const char *s;
+    size_t size;
+} LoadS;
+//LUA_API int   (lua_load) (lua_State *L, lua_Reader reader, void *dt, const char *chunkname, const char *mode);
+HOOK_DEF(int, lua_load, void *L, lua_Reader reader, LoadS *dt, const char *chunkname, const char *mode) {
+    DUALLOGD("[+] [%s] L[%p] buff[%s] size[%d] name[%s]", __FUNCTION__, L, dt->s, dt->size, chunkname);
+    if (G_HookConfig->dump_lua) {
+        //if (strstr(chunkname, TEMP_PATH) && dt->s && dt->size > 0)
+            dump_write(PACK_NAME, ASSET_PATH, ASSET_NAME(chunkname), dt->s, dt->size);
+    }
+    return old_lua_load(L, reader, dt, chunkname, mode);
 }
 
 /* lua dump end */
@@ -299,6 +341,7 @@ void cocos_entry(const char *name, void *handle)
     G_bWalkLuaCount = 0;
     G_bWalkResCount = 0;
     G_bWriteXXTEA = 0;
+    G_injectFiles.clear();
 
     unsigned long base = 0;
     findLibBase(HOOK_NAME, &base);
@@ -309,7 +352,8 @@ void cocos_entry(const char *name, void *handle)
     MS(handle, "_ZN11AppDelegate29applicationDidFinishLaunchingEv", applicationDidFinishLaunching);
 #else
     //HOOK启动函数
-    MS(handle, "_ZN7cocos2d11Application3runEv", Application_run);
+    if (!MS(handle, "_ZN7cocos2d11Application3runEv", Application_run))
+        MS(handle, "_ZN7cocos2d13CCApplication3runEv", Application_run);
 #endif
 
     if (G_HookConfig->dump_lua)
@@ -318,12 +362,14 @@ void cocos_entry(const char *name, void *handle)
         MS(handle, "lua_pushstring", lua_pushstring);
         MS(handle, "lua_settop", lua_settop);
         MS(handle, "luaL_openlibs", luaL_openlibs);
-        MS(handle, "luaL_loadbuffer", luaL_loadbuffer);
+        if (!MS(handle, "luaL_loadbuffer", luaL_loadbuffer))
+            MS(handle, "lua_load", lua_load);
         /* lua func */
         MS(handle, "cocos2dx_lua_loader", cocos2dx_lua_loader);
         //MS(handle, "_ZN7cocos2d9LuaEngine11getInstanceEv", LuaEngine_getInstance);
         //MS(handle, "_ZN7cocos2d9LuaEngine17executeScriptFileEPKc", executeScriptFile);
         //if (old_LuaEngine_getInstance) old_LuaEngine_getInstance();
+
 #if 0
         DUALLOGD("handle 0x[%x] base 0x[%x]", handle, base);
         MS_THUMB(base, 0x388084, luaL_loadbuffer);
@@ -340,10 +386,14 @@ void cocos_entry(const char *name, void *handle)
 
     if (G_HookConfig->dump_res1)
     {
+        //MS(handle, "_ZN7cocos2d5Image17initWithImageDataEPKhlb", initWithImageData);
+        //MS(handle, "_ZN7cocos2d7CCImage17initWithImageDataEPviNS_12EImageFormatEiii", _initWithImageData);
         if (!MS(handle, "_ZN7cocos2d5Image12detectFormatEPKhi", detectFormat))
             MS(handle, "_ZN7cocos2d5Image12detectFormatEPKhl", detectFormat);
         if (!MS(handle, "_ZN7cocos2d6Sprite6createERKSs", Sprite_create))
-            MS(handle, "_ZN7cocos2d6Sprite6createEv", Sprite_create);
+            if (!MS(handle, "_ZN7cocos2d6Sprite6createEv", Sprite_create))
+                MS(handle, "_ZN7cocos2d8CCSprite6createEPKc", Sprite_create_);
+
 #if 0
         DUALLOGD("handle 0x[%x] base 0x[%x]", handle, base);
         MS_THUMB(base, 0x00548E74, detectFormat);
