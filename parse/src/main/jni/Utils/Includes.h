@@ -6,11 +6,13 @@
 #define __UTILS_INCLUDES__
 
 #define WHALE 0
+#define ANDHOOK 0
 
 #include "Misc/Misc.h"
 #include "Misc/CallStack.h"
 #include "CJsonObject/CJsonObject.hpp"
 #include "Substrate/CydiaSubstrate.h"
+#include "AndHook/AndHook.h"
 #include "dlfcn/include/dlfcn_compat.h"
 #include "Foundation/SymbolFinder.h"
 #include "Foundation/SandboxFs.h"

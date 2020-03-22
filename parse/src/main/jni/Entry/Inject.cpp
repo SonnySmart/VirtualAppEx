@@ -89,10 +89,14 @@ HOOK_DEF(void, onSoLoaded, const char *name, void *handle)
 
 void hook_dlopen(int api_level) {
     void *symbol = NULL;
+    void *handle = NULL;
+
+    findLibBase("linker", (unsigned long *) &handle);
 //    if (findSymbol("dlopen", "libhoudini.so",
 //                   (unsigned long *) &symbol) == 0) {
 //        DUALLOGD("libhoudini.so dlopen");
-//        MSHookFunction(symbol, (void *) new_dlopen, (void **) &old_dlopen);
+//        MSHookFunction(symbol, (void *) new_dlopen_houdini, (void **) &old_dlopen_houdini);
+//        //new_dlopen_houdini("/data/data/io.virtualapp.ex/lib/libparse.so", RTLD_LAZY | RTLD_NOW);
 //        return;
 //    }
 
@@ -100,27 +104,24 @@ void hook_dlopen(int api_level) {
         if (findSymbol("__dl__Z9do_dlopenPKciPK17android_dlextinfoPv", "linker",
                        (unsigned long *) &symbol) == 0) {
             DUALLOGD("__dl__Z9do_dlopenPKciPK17android_dlextinfoPv");
-            MSHookFunction(symbol, (void *) new_do_dlopen_V24,
-                           (void **) &old_do_dlopen_V24);
+            MS(handle, "__dl__Z9do_dlopenPKciPK17android_dlextinfoPv", do_dlopen_V24);
         }
         else if (findSymbol("__dl__Z9do_dlopenPKciPK17android_dlextinfoPKv", "linker",
                             (unsigned long *) &symbol) == 0) {
             DUALLOGD("__dl__Z9do_dlopenPKciPK17android_dlextinfoPKv");
-            MSHookFunction(symbol, (void *) new_do_dlopen_V24,
-                           (void **) &old_do_dlopen_V24);
+            MS(handle, "__dl__Z9do_dlopenPKciPK17android_dlextinfoPKv", do_dlopen_V24);
         }
     } else if (api_level >= 19) {
         if (findSymbol("__dl__Z9do_dlopenPKciPK17android_dlextinfo", "linker",
                        (unsigned long *) &symbol) == 0) {
             DUALLOGD("__dl__Z9do_dlopenPKciPK17android_dlextinfo");
-            MSHookFunction(symbol, (void *) new_do_dlopen_V19,
-                           (void **) &old_do_dlopen_V19);
+            MS(handle, "__dl__Z9do_dlopenPKciPK17android_dlextinfo", do_dlopen_V19);
         }
     } else {
         if (findSymbol("__dl_dlopen", "linker",
                        (unsigned long *) &symbol) == 0) {
             DUALLOGD("__dl_dlopen");
-            MSHookFunction(symbol, (void *) new_dlopen, (void **) &old_dlopen);
+            MS(handle, "__dl_dlopen", dlopen);
         }
     }
 }
@@ -150,6 +151,15 @@ JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved)
         void *handle = dlopen("/data/data/io.virtualapp.ex/lib/libwhale.so", RTLD_LAZY | RTLD_NOW);
         G_WInlineHookFunction = (ptr_WInlineHookFunction)dlsym(handle, "WInlineHookFunction");
         DUALLOGD("G_WInlineHookFunction[%p]", G_WInlineHookFunction);
+#elif ANDHOOK
+        if (findSymbol("AKHookFunction", "libAK.so", (unsigned long *)&G_WInlineHookFunction) != 0)
+        {
+            DUALLOGE("[-] AKHookFunction is unload");
+        }
+        else
+        {
+            DUALLOGD("[+] AKHookFunction is load[%p]", G_WInlineHookFunction);
+        }
 #endif
 
         hook_dlopen(get_sdk_level());
