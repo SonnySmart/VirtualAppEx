@@ -21,6 +21,44 @@ const char* kLibBacktrace = "libbacktrace.so";
 static BacktraceStub* CreateBacktrace(pid_t tid);
 static uint64_t GetFaultPcRelative(ucontext_t* context);
 
+static void *get_uc_mcontext_pc(ucontext_t *uc)
+{
+#if defined(__APPLE__) && !defined(MAC_OS_X_VERSION_10_6)
+    /* OSX < 10.6 */
+#if defined(__x86_64__)
+    return (void *)uc->uc_mcontext->__ss.__rip;
+#elif defined(__i386__)
+    return (void *)uc->uc_mcontext->__ss.__eip;
+#else
+    return (void *)uc->uc_mcontext->__ss.__srr0;
+#endif
+#elif defined(__APPLE__) && defined(MAC_OS_X_VERSION_10_6)
+    /* OSX >= 10.6 */
+#if defined(_STRUCT_X86_THREAD_STATE64) && !defined(__i386__)
+    return (void *)uc->uc_mcontext->__ss.__rip;
+#else
+    return (void *)uc->uc_mcontext->__ss.__eip;
+#endif
+#elif defined(__linux__)
+    /* Linux */
+#if defined(__i386__)
+    return (void *)uc->uc_mcontext.gregs[REG_EIP]; /* Linux 32 */
+#elif defined(__X86_64__) || defined(__x86_64__)
+    return (void *)uc->uc_mcontext.gregs[REG_RIP]; /* Linux 64 */
+#elif defined(__ia64__) /* Linux IA64 */
+    return (void *)uc->uc_mcontext.sc_ip;
+#elif defined(__arm__)
+    return (void *)uc->uc_mcontext.arm_pc;
+#elif defined(__aarch64__)
+    return (void *)uc->uc_mcontext.pc;
+#else
+    return NULL;
+#endif
+#else
+    return NULL;
+#endif
+}
+
 void GetStackTrace(pid_t tid, void* ctx, GetTraceCallback* callback) {
   std::unique_ptr<BacktraceStub> backtrace{CreateBacktrace(tid)};
   if (!backtrace) {
@@ -36,7 +74,8 @@ void GetStackTrace(pid_t tid, void* ctx, GetTraceCallback* callback) {
 
   auto context = reinterpret_cast<ucontext_t*>(ctx);
   // uc_mcontext.pc is the next instruction to be executed
-  auto pc = static_cast<uint64_t>(context->uc_mcontext.arm_pc) - 4;
+  auto pc = static_cast<uint64_t >((uint64_t)get_uc_mcontext_pc(context) - 4);
+
   size_t j = 0;
   for (size_t i = 0, size = backtrace->NumFrames(); i < size; ++i) {
     auto frame = backtrace->GetFrame(i);
@@ -69,7 +108,7 @@ static BacktraceStub* CreateBacktrace(pid_t tid) {
 }
 
 static uint64_t GetFaultPcRelative(ucontext_t* context) {
-  void* pc = reinterpret_cast<void*>(context->uc_mcontext.arm_pc);
+    void* pc = reinterpret_cast<void*>(get_uc_mcontext_pc(context));
   Dl_info dl_info;
   if (dladdr(pc, &dl_info)) {
     auto base = reinterpret_cast<uint64_t>(dl_info.dli_fbase);

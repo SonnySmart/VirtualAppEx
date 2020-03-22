@@ -89,12 +89,12 @@ HOOK_DEF(void, onSoLoaded, const char *name, void *handle)
 
 void hook_dlopen(int api_level) {
     void *symbol = NULL;
-    if (findSymbol("dlopen", "libhoudini.so",
-                   (unsigned long *) &symbol) == 0) {
-        DUALLOGD("libhoudini.so dlopen");
-        MSHookFunction(symbol, (void *) new_dlopen, (void **) &old_dlopen);
-        return;
-    }
+//    if (findSymbol("dlopen", "libhoudini.so",
+//                   (unsigned long *) &symbol) == 0) {
+//        DUALLOGD("libhoudini.so dlopen");
+//        MSHookFunction(symbol, (void *) new_dlopen, (void **) &old_dlopen);
+//        return;
+//    }
 
     if (api_level > 23) {
         if (findSymbol("__dl__Z9do_dlopenPKciPK17android_dlextinfoPv", "linker",
@@ -145,14 +145,14 @@ JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved)
 
         if (!loadConfig()) break;
 
-        hook_dlopen(get_sdk_level());
-
 #if WHALE
         //libwhale.so
-        void *handle = dlopen("libwhale.so", RTLD_LAZY | RTLD_NOW);
+        void *handle = dlopen("/data/data/io.virtualapp.ex/lib/libwhale.so", RTLD_LAZY | RTLD_NOW);
         G_WInlineHookFunction = (ptr_WInlineHookFunction)dlsym(handle, "WInlineHookFunction");
         DUALLOGD("G_WInlineHookFunction[%p]", G_WInlineHookFunction);
 #endif
+
+        hook_dlopen(get_sdk_level());
 
         DUALLOGD("[+] [%s] hook_dlopen finish .", __FUNCTION__);
 	} while (0);
