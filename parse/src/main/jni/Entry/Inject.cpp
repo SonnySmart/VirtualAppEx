@@ -89,6 +89,13 @@ HOOK_DEF(void, onSoLoaded, const char *name, void *handle)
 
 void hook_dlopen(int api_level) {
     void *symbol = NULL;
+    if (findSymbol("dlopen", "libhoudini.so",
+                   (unsigned long *) &symbol) == 0) {
+        DUALLOGD("libhoudini.so dlopen");
+        MSHookFunction(symbol, (void *) new_dlopen, (void **) &old_dlopen);
+        return;
+    }
+
     if (api_level > 23) {
         if (findSymbol("__dl__Z9do_dlopenPKciPK17android_dlextinfoPv", "linker",
                        (unsigned long *) &symbol) == 0) {
