@@ -48,6 +48,8 @@ void onSoLoaded(const char *name, void *handle) {
         //MS(handle, "JNI_OnLoad", JNI_OnLoad);
         hook_entry(name, handle);
     }
+
+    //call_stack();
 }
 
 HOOK_DEF(void*, dlopen, const char *filename, int flag) {
@@ -87,41 +89,76 @@ HOOK_DEF(void, onSoLoaded, const char *name, void *handle)
     //OLD_FUNC(onSoLoaded)(name, handle);
 }
 
+//void *dlsym(void *handle, const char *name)
+HOOK_DEF(void *, dlsym, void *handle, const char *name) {
+    DUALLOGE("dlsym[%p] name[%s]", handle, name);
+    return old_dlsym(handle, name);
+}
+
 void hook_dlopen(int api_level) {
     void *symbol = NULL;
-    void *handle = NULL;
 
-    findLibBase("linker", (unsigned long *) &handle);
+//    if (findSymbol("android_dlopen_ext", "libhoudini.so",
+//                   (unsigned long *) &symbol) == 0) {
+//        DUALLOGD("libhoudini.so do_dlopen_V19");
+//        MS_Function(symbol, do_dlopen_V19);
+//        //return;
+//    }
+//
+//    if (findSymbol("dlsym", "libhoudini.so",
+//                   (unsigned long *) &symbol) == 0) {
+//        DUALLOGD("libhoudini.so dlsym");
+//        MS_Function(symbol, dlsym);
+//        //return;
+//    }
+//
 //    if (findSymbol("dlopen", "libhoudini.so",
 //                   (unsigned long *) &symbol) == 0) {
 //        DUALLOGD("libhoudini.so dlopen");
-//        MSHookFunction(symbol, (void *) new_dlopen_houdini, (void **) &old_dlopen_houdini);
-//        //new_dlopen_houdini("/data/data/io.virtualapp.ex/lib/libparse.so", RTLD_LAZY | RTLD_NOW);
-//        return;
+//        MS_Function(symbol, dlopen);
+//        //return;
 //    }
+
 
     if (api_level > 23) {
         if (findSymbol("__dl__Z9do_dlopenPKciPK17android_dlextinfoPv", "linker",
                        (unsigned long *) &symbol) == 0) {
             DUALLOGD("__dl__Z9do_dlopenPKciPK17android_dlextinfoPv");
-            MS(handle, "__dl__Z9do_dlopenPKciPK17android_dlextinfoPv", do_dlopen_V24);
+            MS_Function(symbol, do_dlopen_V24);
         }
         else if (findSymbol("__dl__Z9do_dlopenPKciPK17android_dlextinfoPKv", "linker",
                             (unsigned long *) &symbol) == 0) {
             DUALLOGD("__dl__Z9do_dlopenPKciPK17android_dlextinfoPKv");
-            MS(handle, "__dl__Z9do_dlopenPKciPK17android_dlextinfoPKv", do_dlopen_V24);
+            MS_Function(symbol, do_dlopen_V24);
         }
     } else if (api_level >= 19) {
         if (findSymbol("__dl__Z9do_dlopenPKciPK17android_dlextinfo", "linker",
                        (unsigned long *) &symbol) == 0) {
             DUALLOGD("__dl__Z9do_dlopenPKciPK17android_dlextinfo");
-            MS(handle, "__dl__Z9do_dlopenPKciPK17android_dlextinfo", do_dlopen_V19);
+            MS_Function(symbol, do_dlopen_V19);
         }
     } else {
         if (findSymbol("__dl_dlopen", "linker",
                        (unsigned long *) &symbol) == 0) {
             DUALLOGD("__dl_dlopen");
-            MS(handle, "__dl_dlopen", dlopen);
+            MS_Function(symbol, dlopen);
+        }
+    }
+}
+
+void hook_so()
+{
+    if (strlen(PACK_NAME) > 0 && strlen(HOOK_NAME) > 0)
+    {
+        void *handle = NULL;
+        if (findLibBase(HOOK_NAME, (unsigned long *)&handle) == 0)
+        {
+            DUALLOGD("[+] find lib[%s] handle[%p]", HOOK_NAME, handle);
+            hook_entry(HOOK_NAME, handle);
+        }
+        else
+        {
+            DUALLOGE("[-] not find lib[%s] handle[%p]", HOOK_NAME, handle);
         }
     }
 }
@@ -162,7 +199,8 @@ JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved)
         }
 #endif
 
-        hook_dlopen(get_sdk_level());
+        //hook_dlopen(get_sdk_level());
+        hook_so();
 
         DUALLOGD("[+] [%s] hook_dlopen finish .", __FUNCTION__);
 	} while (0);

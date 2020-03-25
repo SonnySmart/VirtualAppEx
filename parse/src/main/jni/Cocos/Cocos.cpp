@@ -423,6 +423,7 @@ void cocos_entry(const char *name, void *handle)
     if (G_HookConfig->dump_inject)
     {
         MS(handle, "luaL_loadbuffer", luaL_loadbuffer);
+
     }
 
     DUALLOGW("[+] [%s] cocos 注入成功 .", __FUNCTION__);

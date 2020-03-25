@@ -332,7 +332,9 @@ bool inline_hook(void *handle, const char *symbol_name, void *replace, void **re
         return false;
     }
 
-    void *symbol = dlsym(handle, symbol_name);
+    //void *symbol = dlsym(handle, symbol_name);
+    void *symbol = NULL;
+    findSymbol(symbol_name, HOOK_NAME, (unsigned long *)&symbol);
     if (!symbol)
     {
         DUALLOGE("[-] [%s] symbol[%s] dlerror[%s]", __FUNCTION__, symbol_name, dlerror());

@@ -55,6 +55,7 @@
 #define WALK_ADDR(fn) &fn##_buffer
 // hook arm方法
 #define MS(handle, symbol, fn) inline_hook(handle, symbol, reinterpret_cast<void *>(NEW_FUNC(fn)), reinterpret_cast<void **>(&OLD_FUNC(fn)))
+#define MS_Function(symbol, fn) MSHookFunction(symbol, reinterpret_cast<void *>(NEW_FUNC(fn)), reinterpret_cast<void **>(&OLD_FUNC(fn)))
 // hook thumb方法 sub_xxx函数
 #define MS_THUMB(base, offset, fn) \
   MSHookFunction(reinterpret_cast<void *>((base + offset) | 0x1), reinterpret_cast<void *>(NEW_FUNC(fn)), reinterpret_cast<void **>(&OLD_FUNC(fn)))
