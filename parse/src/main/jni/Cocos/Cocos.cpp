@@ -79,6 +79,18 @@ HOOK_DEF(void *, Sprite_create_, const char *filename) {
     return old_Sprite_create_(filename);
 }
 
+//CCTextureCache * CCTextureCache::sharedTextureCache()
+HOOK_DEF(void *, sharedTextureCache) {
+    return old_sharedTextureCache();
+}
+
+//CCTexture2D * CCTextureCache::addImage(const char * path)
+HOOK_DEF(void *, addImage, void *self, const char *path) {
+    DUALLOGD("[+] [%s] data[%p] len[%d] name[%s]", __FUNCTION__, self, 0, path);
+    if (G_bWalkResCount == 0) start_dump();
+    return old_addImage(self, path);
+}
+
 WALK_FUNC(Image) {
     if (check_lua(name))
         return;
@@ -88,15 +100,62 @@ WALK_FUNC(Image) {
 
     DUALLOGD("filename[%s]", G_filename);
 
-    if (check_png(name))
+#if 1
+    if (old_Sprite_create) old_Sprite_create(G_filename);
+    if (old_Sprite_create_) old_Sprite_create_(G_filename);
+    if (old_sharedTextureCache && old_addImage) old_addImage(old_sharedTextureCache(), G_filename);
+    //dump_write(PACK_NAME, ASSET_PATH, ASSET_NAME(G_filename), (const char *)buff, len);
+#else
+    if (old_sharedTextureCache && old_addImage) old_addImage(old_sharedTextureCache(), G_filename);
+#endif
+}
+
+typedef struct
+{
+    unsigned char* data;
+    int size;
+    int offset;
+}tImageSource;
+
+//void png_set_read_fn(png_structrp png_ptr, png_voidp io_ptr,
+//    png_rw_ptr read_data_fn)
+HOOK_DEF(void, png_set_read_fn, void * png_ptr, tImageSource* io_ptr, void* read_data_fn) {
+    if (io_ptr)
     {
-        if (old_Sprite_create) old_Sprite_create(G_filename);
-        if (old_Sprite_create_) old_Sprite_create_(G_filename);
+        DUALLOGD("[+] [%s] data[%p] len[%d] name[%s]", __FUNCTION__, io_ptr->data, io_ptr->size, G_filename);
+        if (strstr(G_filename, TEMP_PATH) && io_ptr->data && io_ptr->size > 0)
+        {
+            dump_write(PACK_NAME, ASSET_PATH, ASSET_NAME(G_filename), (const char *)io_ptr->data, io_ptr->size);
+        }
     }
-    else
+    return old_png_set_read_fn(png_ptr, io_ptr, read_data_fn);
+}
+
+//EXTERN(void) jpeg_mem_src JPP((j_decompress_ptr cinfo,
+//                  unsigned char * inbuffer,
+//                  unsigned long insize));
+HOOK_DEF(void, jpeg_mem_src, void *cinfo, unsigned char * inbuffer, unsigned long insize) {
+    DUALLOGD("[+] [%s] data[%p] len[%d] name[%s]", __FUNCTION__, inbuffer, insize, G_filename);
+    if (strstr(G_filename, TEMP_PATH) && inbuffer && insize > 0)
     {
-        dump_write(PACK_NAME, ASSET_PATH, ASSET_NAME(G_filename), (const char *)buff, len);
+        dump_write(PACK_NAME, ASSET_PATH, ASSET_NAME(G_filename), (const char *)inbuffer, insize);
     }
+    return old_jpeg_mem_src(cinfo, inbuffer, insize);
+}
+
+//bool CCImage::initWithImageData(void * pData,
+//                                int nDataLen,
+//                                EImageFormat eFmt/* = eSrcFmtPng*/,
+//                                int nWidth/* = 0*/,
+//                                int nHeight/* = 0*/,
+//                                int nBitsPerComponent/* = 8*/)
+HOOK_DEF(bool, initWithImageData, void *self, void * pData,int nDataLen,int eFmt/* = eSrcFmtPng*/,int nWidth/* = 0*/,int nHeight/* = 0*/,int nBitsPerComponent/* = 8*/) {
+    DUALLOGD("[+] [%s] data[%p] len[%d] name[%s]", __FUNCTION__, pData, nDataLen, G_filename);
+    if (strstr(G_filename, TEMP_PATH) && !check_png(G_filename) && pData && nDataLen > 0)
+    {
+        dump_write(PACK_NAME, ASSET_PATH, ASSET_NAME(G_filename), (const char *)pData, nDataLen);
+    }
+    return old_initWithImageData(self, pData, nDataLen, eFmt, nWidth, nHeight, nBitsPerComponent);
 }
 
 //bool Image::initWithPngData(const unsigned char * data, ssize_t dataLen)
@@ -117,24 +176,6 @@ HOOK_DEF(bool , initWithJpgData, void *self, const unsigned char * data, ssize_t
         dump_write(PACK_NAME, ASSET_PATH, ASSET_NAME(G_filename), (const char *)data, dataLen);
     }
     return old_initWithJpgData(self, data, dataLen);
-}
-
-//Image::Format Image::detectFormat(const unsigned char * data, ssize_t dataLen)
-HOOK_DEF(int, detectFormat, void *self, const unsigned char * data, ssize_t dataLen) {
-    DUALLOGD("[+] [%s] data[%p] len[%d] name[%s]", __FUNCTION__, data, dataLen, G_filename);
-
-    if (strstr(G_filename, TEMP_PATH) && data && dataLen > 0)
-    {
-#if 1
-        dump_write(PACK_NAME, ASSET_PATH, ASSET_NAME(G_filename), (const char *)data, dataLen);
-#else
-        char buffer[128] = { 0 };
-        sprintf(buffer, "%p.png", data);
-        dump_write(PACK_NAME, ASSET_PATH, buffer, (const char *)data, dataLen);
-#endif
-    }
-
-    return old_detectFormat(self, data, dataLen);
 }
 
 /* res dump end */
@@ -305,7 +346,7 @@ void start_dump() {
     }
     if (G_HookConfig->dump_res1 && G_bWalkResCount == 0) {
         DUALLOGD("开始..................................");
-        filewalk(TEMP_PATH, WALK_ADDR(Image), NULL, G_bWalkResCount, true);
+        filewalk(TEMP_PATH, WALK_ADDR(Image), NULL, G_bWalkResCount, false);
     }
     if (G_HookConfig->dump_res2 && G_bWalkResCount == 0) {
         DUALLOGD("开始..................................");
@@ -368,18 +409,19 @@ void cocos_entry(const char *name, void *handle)
 
     if (G_HookConfig->dump_res1)
     {
-//        if (!MS(handle, "_ZN7cocos2d5Image12detectFormatEPKhi", detectFormat))
-//            MS(handle, "_ZN7cocos2d5Image12detectFormatEPKhl", detectFormat);
-        MS(handle, "_ZN7cocos2d7CCImage16_initWithJpgDataEPvi", initWithJpgData);
-        MS(handle, "_ZN7cocos2d7CCImage16_initWithPngDataEPvi", initWithPngData);
+        MS(handle, "jpeg_mem_src", jpeg_mem_src);
+        MS(handle, "png_set_read_fn", png_set_read_fn);
+        MS(handle, "_ZN7cocos2d7CCImage17initWithImageDataEPviNS0_12EImageFormatEiii", initWithImageData);
         if (!MS(handle, "_ZN7cocos2d6Sprite6createERKSs", Sprite_create))
             if (!MS(handle, "_ZN7cocos2d6Sprite6createEv", Sprite_create))
                 MS(handle, "_ZN7cocos2d8CCSprite6createEPKc", Sprite_create_);
 
 #if 0
         DUALLOGD("handle 0x[%x] base 0x[%x]", handle, base);
-        MS_THUMB(base, 0x00548E74, detectFormat);
-        MS_THUMB(base, 0x0052F0CC, Sprite_create);
+        MS_THUMB_SIMULATOR(base, 0x010F96FC, addImage);
+        MS_THUMB_SIMULATOR(base, 0x010F7C20, sharedTextureCache);
+        MS_THUMB_SIMULATOR(base, 0x010B109C, initWithImageData);
+        //MS_THUMB(base, 0x0052F0CC, Sprite_create);
 #endif
     }
 
