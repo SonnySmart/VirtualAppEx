@@ -3,6 +3,7 @@
 //
 
 #include "../Utils/Includes.h"
+#include <GLES2/gl2.h>
 
 static void * G_Handle = NULL;
 static size_t G_bWalkResCount = 0;
@@ -20,7 +21,7 @@ bool check_res(const char *name) {
 }
 
 bool check_png(const char *name) {
-    return (strstr(name, ".png") || strstr(name, ".jpg"));
+    return (strstr(name, ".png") || strstr(name, ".jpg") || strstr(name, ".jpeg") || strstr(name, ".pkm"));
 }
 
 bool check_src(const char *name) {
@@ -91,6 +92,25 @@ HOOK_DEF(void *, addImage, void *self, const char *path) {
     return old_addImage(self, path);
 }
 
+HOOK_DEF(bool, initWithImageData, void *self, void * pData,int nDataLen,int eFmt/* = eSrcFmtPng*/,int nWidth/* = 0*/,int nHeight/* = 0*/,int nBitsPerComponent/* = 8*/) {
+    DUALLOGD("[+] [%s] data[%p] len[%d] name[%s]", __FUNCTION__, pData, nDataLen, G_filename);
+    if (strstr(G_filename, TEMP_PATH) && !check_png(G_filename) && pData && nDataLen > 0)
+    {
+        dump_write(PACK_NAME, ASSET_PATH, ASSET_NAME(G_filename), (const char *)pData, nDataLen);
+    }
+    return old_initWithImageData(self, pData, nDataLen, eFmt, nWidth, nHeight, nBitsPerComponent);
+}
+
+//bool Image::initWithImageData(const unsigned char * data, ssize_t dataLen)
+HOOK_DEF(bool, initWithImageData_3x, void *self, const unsigned char * data, ssize_t dataLen) {
+    DUALLOGD("[+] [%s] data[%p] len[%d] name[%s]", __FUNCTION__, data, dataLen, G_filename);
+    if (strstr(G_filename, TEMP_PATH) && !check_png(G_filename) && data && dataLen > 0)
+    {
+        dump_write(PACK_NAME, ASSET_PATH, ASSET_NAME(G_filename), (const char *)data, dataLen);
+    }
+    return old_initWithImageData_3x(self, data, dataLen);
+}
+
 WALK_FUNC(Image) {
     if (check_lua(name))
         return;
@@ -104,7 +124,11 @@ WALK_FUNC(Image) {
     if (old_Sprite_create) old_Sprite_create(G_filename);
     if (old_Sprite_create_) old_Sprite_create_(G_filename);
     if (old_sharedTextureCache && old_addImage) old_addImage(old_sharedTextureCache(), G_filename);
-    //dump_write(PACK_NAME, ASSET_PATH, ASSET_NAME(G_filename), (const char *)buff, len);
+
+    if (!old_initWithImageData_3x && !old_initWithImageData && buff && len > 0)
+    {
+        dump_write(PACK_NAME, ASSET_PATH, ASSET_NAME(G_filename), (const char *)buff, len);
+    }
 #else
     if (old_sharedTextureCache && old_addImage) old_addImage(old_sharedTextureCache(), G_filename);
 #endif
@@ -117,8 +141,8 @@ typedef struct
     int offset;
 }tImageSource;
 
-//void png_set_read_fn(png_structrp png_ptr, png_voidp io_ptr,
-//    png_rw_ptr read_data_fn)
+//png data
+//void png_set_read_fn(png_structrp png_ptr, png_voidp io_ptr, png_rw_ptr read_data_fn)
 HOOK_DEF(void, png_set_read_fn, void * png_ptr, tImageSource* io_ptr, void* read_data_fn) {
     if (io_ptr)
     {
@@ -131,9 +155,8 @@ HOOK_DEF(void, png_set_read_fn, void * png_ptr, tImageSource* io_ptr, void* read
     return old_png_set_read_fn(png_ptr, io_ptr, read_data_fn);
 }
 
-//EXTERN(void) jpeg_mem_src JPP((j_decompress_ptr cinfo,
-//                  unsigned char * inbuffer,
-//                  unsigned long insize));
+//jpg jpeg data
+//EXTERN(void) jpeg_mem_src JPP((j_decompress_ptr cinfo, unsigned char * inbuffer, unsigned long insize));
 HOOK_DEF(void, jpeg_mem_src, void *cinfo, unsigned char * inbuffer, unsigned long insize) {
     DUALLOGD("[+] [%s] data[%p] len[%d] name[%s]", __FUNCTION__, inbuffer, insize, G_filename);
     if (strstr(G_filename, TEMP_PATH) && inbuffer && insize > 0)
@@ -143,39 +166,21 @@ HOOK_DEF(void, jpeg_mem_src, void *cinfo, unsigned char * inbuffer, unsigned lon
     return old_jpeg_mem_src(cinfo, inbuffer, insize);
 }
 
-//bool CCImage::initWithImageData(void * pData,
-//                                int nDataLen,
-//                                EImageFormat eFmt/* = eSrcFmtPng*/,
-//                                int nWidth/* = 0*/,
-//                                int nHeight/* = 0*/,
-//                                int nBitsPerComponent/* = 8*/)
-HOOK_DEF(bool, initWithImageData, void *self, void * pData,int nDataLen,int eFmt/* = eSrcFmtPng*/,int nWidth/* = 0*/,int nHeight/* = 0*/,int nBitsPerComponent/* = 8*/) {
-    DUALLOGD("[+] [%s] data[%p] len[%d] name[%s]", __FUNCTION__, pData, nDataLen, G_filename);
-    if (strstr(G_filename, TEMP_PATH) && !check_png(G_filename) && pData && nDataLen > 0)
+//pkm data
+//GL_API void GL_APIENTRY glCompressedTexImage2D (GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const void *data);
+HOOK_DEF(void, glCompressedTexImage2D, GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const void *data) {
+    DUALLOGD("[+] [%s] data[%p] len[%d] name[%s]", __FUNCTION__, data, imageSize, G_filename);
+    if (strstr(G_filename, TEMP_PATH) && data && imageSize > 0)
     {
-        dump_write(PACK_NAME, ASSET_PATH, ASSET_NAME(G_filename), (const char *)pData, nDataLen);
+        dump_write(PACK_NAME, ASSET_PATH, ASSET_NAME(G_filename), (const char *)data, imageSize);
     }
-    return old_initWithImageData(self, pData, nDataLen, eFmt, nWidth, nHeight, nBitsPerComponent);
+    return old_glCompressedTexImage2D(target, level, internalformat,width, height, border, imageSize, data);
 }
 
-//bool Image::initWithPngData(const unsigned char * data, ssize_t dataLen)
-HOOK_DEF(bool , initWithPngData, void *self, const unsigned char * data, ssize_t dataLen) {
-    DUALLOGD("[+] [%s] data[%p] len[%d] name[%s]", __FUNCTION__, data, dataLen, G_filename);
-    if (strstr(G_filename, TEMP_PATH) && data && dataLen > 0)
-    {
-        dump_write(PACK_NAME, ASSET_PATH, ASSET_NAME(G_filename), (const char *)data, dataLen);
-    }
-    return old_initWithPngData(self, data, dataLen);
-}
-
-//bool Image::initWithJpgData(const unsigned char * data, ssize_t dataLen)
-HOOK_DEF(bool , initWithJpgData, void *self, const unsigned char * data, ssize_t dataLen) {
-    DUALLOGD("[+] [%s] data[%p] len[%d] name[%s]", __FUNCTION__, data, dataLen, G_filename);
-    if (strstr(G_filename, TEMP_PATH) && data && dataLen > 0)
-    {
-        dump_write(PACK_NAME, ASSET_PATH, ASSET_NAME(G_filename), (const char *)data, dataLen);
-    }
-    return old_initWithJpgData(self, data, dataLen);
+//bool CCTexture2D::initWithETCFile(const char* file)
+HOOK_DEF(bool, initWithETCFile, void *self, const char* file) {
+    DUALLOGD("[+] [%s] file[%s]", __FUNCTION__, file);
+    return old_initWithETCFile(self, file);
 }
 
 /* res dump end */
@@ -204,8 +209,15 @@ HOOK_DEF(void , luaL_openlibs, void *L) {
 HOOK_DEF(int, cocos2dx_lua_loader, void *L) {
     DUALLOGD("[+] [%s] G_lua_State[%p]", __FUNCTION__, L);
     int ret = old_cocos2dx_lua_loader(L);
-    //if (G_bDumpLua == 0) start_dump();
+    //if (G_lua_State && G_bDumpLua == 0) start_dump();
     return ret;
+}
+
+void *G_CCLuaStack = NULL;
+HOOK_DEF(int, luaLoadBuffer, void *self, void* L, const char* chunk, int chunkSize, const char* chunkName) {
+    G_CCLuaStack = self;
+    //if (G_lua_State && G_bDumpLua == 0) start_dump();
+    return old_luaLoadBuffer(self, L, chunk, chunkSize, chunkName);
 }
 
 WALK_FUNC(luaLoadBuffer) {
@@ -214,9 +226,13 @@ WALK_FUNC(luaLoadBuffer) {
 
     if (G_lua_State) {
         DUALLOGD("[+] [%s] G_lua_State[%p] name[%s]", __FUNCTION__, G_lua_State, name);
+#if 1
         old_lua_settop(G_lua_State, 0);
         old_lua_pushstring(G_lua_State, name);
-        old_cocos2dx_lua_loader(G_lua_State);
+        new_cocos2dx_lua_loader(G_lua_State);
+#else
+        if (new_luaLoadBuffer && G_CCLuaStack)new_luaLoadBuffer(G_CCLuaStack, G_lua_State, buff, len, name);
+#endif
     }
     else
     {
@@ -392,6 +408,7 @@ void cocos_entry(const char *name, void *handle)
             MS(handle, "lua_load", lua_load);
         /* lua func */
         MS(handle, "cocos2dx_lua_loader", cocos2dx_lua_loader);
+        //MS(handle, "_ZN7cocos2d10CCLuaStack13luaLoadBufferEP9lua_StatePKciS4_", luaLoadBuffer);
 
 #if 0
         DUALLOGD("handle 0x[%x] base 0x[%x]", handle, base);
@@ -409,18 +426,24 @@ void cocos_entry(const char *name, void *handle)
 
     if (G_HookConfig->dump_res1)
     {
-        MS(handle, "jpeg_mem_src", jpeg_mem_src);
-        MS(handle, "png_set_read_fn", png_set_read_fn);
-        MS(handle, "_ZN7cocos2d7CCImage17initWithImageDataEPviNS0_12EImageFormatEiii", initWithImageData);
+        //MS(handle, "jpeg_mem_src", jpeg_mem_src);
+        //MS(handle, "png_set_read_fn", png_set_read_fn);
+        //MS(handle, "glCompressedTexImage2D", glCompressedTexImage2D);
+        MS_Function((void *)glCompressedTexImage2D, glCompressedTexImage2D);
+#if 1
+        if (!MS(handle, "_ZN7cocos2d7CCImage17initWithImageDataEPviNS0_12EImageFormatEiii", initWithImageData))
+            MS(handle, "_ZN7cocos2d5Image17initWithImageDataEPKhi", initWithImageData_3x);
+#endif
         if (!MS(handle, "_ZN7cocos2d6Sprite6createERKSs", Sprite_create))
             if (!MS(handle, "_ZN7cocos2d6Sprite6createEv", Sprite_create))
                 MS(handle, "_ZN7cocos2d8CCSprite6createEPKc", Sprite_create_);
 
-#if 0
+#if 1
         DUALLOGD("handle 0x[%x] base 0x[%x]", handle, base);
         MS_THUMB_SIMULATOR(base, 0x010F96FC, addImage);
         MS_THUMB_SIMULATOR(base, 0x010F7C20, sharedTextureCache);
         MS_THUMB_SIMULATOR(base, 0x010B109C, initWithImageData);
+        //MS_THUMB_SIMULATOR(base, 0x010FBA28, initWithETCFile);
         //MS_THUMB(base, 0x0052F0CC, Sprite_create);
 #endif
     }

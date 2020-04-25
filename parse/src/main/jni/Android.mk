@@ -52,6 +52,6 @@ LOCAL_CPPFLAGS += \
 #-mllvm -enable-funcwra \
 #-mllvm -enable-fco
 
-LOCAL_LDLIBS := -llog
+LOCAL_LDLIBS := -llog -lGLESv2
 
 include $(BUILD_SHARED_LIBRARY)

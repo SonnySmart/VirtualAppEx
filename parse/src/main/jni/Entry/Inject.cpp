@@ -98,28 +98,6 @@ HOOK_DEF(void *, dlsym, void *handle, const char *name) {
 void hook_dlopen(int api_level) {
     void *symbol = NULL;
 
-//    if (findSymbol("android_dlopen_ext", "libhoudini.so",
-//                   (unsigned long *) &symbol) == 0) {
-//        DUALLOGD("libhoudini.so do_dlopen_V19");
-//        MS_Function(symbol, do_dlopen_V19);
-//        //return;
-//    }
-//
-//    if (findSymbol("dlsym", "libhoudini.so",
-//                   (unsigned long *) &symbol) == 0) {
-//        DUALLOGD("libhoudini.so dlsym");
-//        MS_Function(symbol, dlsym);
-//        //return;
-//    }
-//
-//    if (findSymbol("dlopen", "libhoudini.so",
-//                   (unsigned long *) &symbol) == 0) {
-//        DUALLOGD("libhoudini.so dlopen");
-//        MS_Function(symbol, dlopen);
-//        //return;
-//    }
-
-
     if (api_level > 23) {
         if (findSymbol("__dl__Z9do_dlopenPKciPK17android_dlextinfoPv", "linker",
                        (unsigned long *) &symbol) == 0) {
