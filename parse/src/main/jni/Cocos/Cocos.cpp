@@ -50,7 +50,39 @@ HOOK_DEF(unsigned char *, getFileData_3x, void *self, const std::string& filenam
 
 //unsigned char* getFileData(const char* pszFileName, const char* pszMode, unsigned long * pSize)
 HOOK_DEF(unsigned char *, getFileData_2x, void *self, const char* pszFileName, const char* pszMode, unsigned long * pSize) {
+    DUALLOGD("[+] [%s] filename[%s]", __FUNCTION__, pszFileName);
     return old_getFileData_2x(self, pszFileName, pszMode, pSize);
+}
+
+std::string&   replace_all(std::string&   str,const   std::string&   old_value,const   std::string&   new_value)
+{
+    while(true)   {
+        std::string::size_type   pos(0);
+        if(   (pos=str.find(old_value))!=std::string::npos   )
+            str.replace(pos,old_value.length(),new_value);
+        else   break;
+    }
+    return   str;
+}
+
+enum class Status
+{
+    OK = 0,
+    NotExists = 1, // File not exists
+    OpenFailed = 2, // Open file failed.
+    ReadFailed = 3, // Read failed
+    NotInitialized = 4, // FileUtils is not initializes
+    TooLarge = 5, // The file is too large (great than 2^32-1)
+    ObtainSizeFailed = 6 // Failed to obtain the file size.
+};
+//FileUtils::Status FileUtils::getContents(const std::string& filename, ResizableBuffer* buffer)
+HOOK_DEF(Status, getContents, void *self, const char *filename, void* buffer) {
+//    filename = replace_all(filename, "/sdcard/myhook/tmp/", "");
+    DUALLOGD("filename[%s]", filename);
+    Status s = old_getContents(self, filename, buffer);
+    //DUALLOGD("[+] [%s] filename[%s] Status[%d]", __FUNCTION__, filename.c_str(), s);
+    DUALLOGD("[+] [%s] Status[%d]", __FUNCTION__, s);
+    return s;
 }
 
 WALK_FUNC(getFileData) {
@@ -58,6 +90,8 @@ WALK_FUNC(getFileData) {
     void *buffer = NULL;
     if (old_getFileData_3x && param) buffer = old_getFileData_3x(param, name, "rb", (ssize_t *)&size);
     else if (old_getFileData_2x && param) buffer = old_getFileData_2x(param, name, "rb", &size);
+
+    DUALLOGD("filename[%s] buffer[%p] size[%d]", name, buffer, size);
 
     if (buffer && size > 0)
         dump_write(PACK_NAME, ASSET_PATH, ASSET_NAME(name), (const char *)buffer, size);
@@ -77,6 +111,7 @@ HOOK_DEF(void *, Sprite_create, const std::string& filename) {
 }
 
 HOOK_DEF(void *, Sprite_create_, const char *filename) {
+    DUALLOGD("+ [%s] filename[%s]", __FUNCTION__, filename);
     return old_Sprite_create_(filename);
 }
 
@@ -121,14 +156,19 @@ WALK_FUNC(Image) {
     DUALLOGD("filename[%s]", G_filename);
 
 #if 1
-    if (old_Sprite_create) old_Sprite_create(G_filename);
-    if (old_Sprite_create_) old_Sprite_create_(G_filename);
-    if (old_sharedTextureCache && old_addImage) old_addImage(old_sharedTextureCache(), G_filename);
-
-    if (!old_initWithImageData_3x && !old_initWithImageData && buff && len > 0)
+    if (check_png(name))
     {
-        dump_write(PACK_NAME, ASSET_PATH, ASSET_NAME(G_filename), (const char *)buff, len);
+        if (old_Sprite_create) new_Sprite_create(G_filename);
+        if (old_Sprite_create_) new_Sprite_create_(G_filename);
+        if (old_sharedTextureCache && old_addImage) old_addImage(old_sharedTextureCache(), G_filename);
+    } else
+    {
+        if (!old_initWithImageData_3x && !old_initWithImageData && buff && len > 0)
+        {
+            dump_write(PACK_NAME, ASSET_PATH, ASSET_NAME(G_filename), (const char *)buff, len);
+        }
     }
+
 #else
     if (old_sharedTextureCache && old_addImage) old_addImage(old_sharedTextureCache(), G_filename);
 #endif
@@ -166,21 +206,30 @@ HOOK_DEF(void, jpeg_mem_src, void *cinfo, unsigned char * inbuffer, unsigned lon
     return old_jpeg_mem_src(cinfo, inbuffer, insize);
 }
 
+static unsigned char *gPKMAddress = NULL;
 //pkm data
 //GL_API void GL_APIENTRY glCompressedTexImage2D (GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const void *data);
 HOOK_DEF(void, glCompressedTexImage2D, GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const void *data) {
-    DUALLOGD("[+] [%s] data[%p] len[%d] name[%s]", __FUNCTION__, data, imageSize, G_filename);
-    if (strstr(G_filename, TEMP_PATH) && data && imageSize > 0)
+    int size = imageSize + 16;
+    unsigned char * buffer = gPKMAddress;
+    DUALLOGD("[+] [%s] data[%p] len[%d] name[%s]", __FUNCTION__, buffer, size, G_filename);
+    if (strstr(G_filename, TEMP_PATH) && buffer && size > 0)
     {
-        dump_write(PACK_NAME, ASSET_PATH, ASSET_NAME(G_filename), (const char *)data, imageSize);
+        dump_write(PACK_NAME, ASSET_PATH, ASSET_NAME(G_filename), (const char *)buffer, size);
+        gPKMAddress = NULL;
     }
     return old_glCompressedTexImage2D(target, level, internalformat,width, height, border, imageSize, data);
 }
 
-//bool CCTexture2D::initWithETCFile(const char* file)
-HOOK_DEF(bool, initWithETCFile, void *self, const char* file) {
-    DUALLOGD("[+] [%s] file[%s]", __FUNCTION__, file);
-    return old_initWithETCFile(self, file);
+//int __fastcall sub_10FCB64(unsigned __int8 *a1)
+HOOK_DEF(int, sub_10FCB64, unsigned char *a1) {
+    //DUALLOGD("[+] [%s] buffer[%s]", __FUNCTION__, a1);
+    int ret = old_sub_10FCB64(a1);
+    char buffer[16] = {0};
+    memcpy(buffer, a1, 16);
+    DUALLOGD("[+] [%s] buffer[%s]", __FUNCTION__, buffer);
+    gPKMAddress = a1;
+    return ret;
 }
 
 /* res dump end */
@@ -198,6 +247,13 @@ HOOK_DEF(void ,lua_settop, void *L, int idx) {
 }
 
 void *G_lua_State = NULL;
+//LUALIB_API lua_State *luaL_newstate (void)
+HOOK_DEF(void *, luaL_newstate) {
+    G_lua_State = old_luaL_newstate();
+    DUALLOGD("[+] [%s] G_lua_State[%p]", __FUNCTION__, G_lua_State);
+    return G_lua_State;
+}
+
 //void luaL_openlibs(lua_State *L);
 HOOK_DEF(void , luaL_openlibs, void *L) {
     G_lua_State = L;
@@ -284,9 +340,16 @@ typedef struct LoadS {
 } LoadS;
 //LUA_API int   (lua_load) (lua_State *L, lua_Reader reader, void *dt, const char *chunkname, const char *mode);
 HOOK_DEF(int, lua_load, void *L, lua_Reader reader, LoadS *dt, const char *chunkname, const char *mode) {
-    DUALLOGD("[+] [%s] L[%p] buff[%s] size[%d] name[%s]", __FUNCTION__, L, dt->s, dt->size, chunkname);
+    //DUALLOGD("[+] [%s] L[%p] buff[%s] size[%d] name[%s]", __FUNCTION__, L, dt->s, dt->size, chunkname);
+    DUALLOGD("[+] [%s] L[%p] buff[%p] size[%d] name[%p]", __FUNCTION__, L, dt->s, dt->size, chunkname);
+    if (dt->size <= 0)
+    {
+        DUALLOGD("[+] [%s] L[%p] buff[%p] size[%d] name[%s]", __FUNCTION__, L, dt->s, dt->size, chunkname);
+        return 0;
+    }
+
     if (G_HookConfig->dump_lua) {
-        //if (strstr(chunkname, TEMP_PATH) && dt->s && dt->size > 0)
+        if (strstr(chunkname, TEMP_PATH) && dt->s && dt->size > 0)
             dump_write(PACK_NAME, ASSET_PATH, ASSET_NAME(chunkname), dt->s, dt->size);
     }
     return old_lua_load(L, reader, dt, chunkname, mode);
@@ -351,6 +414,25 @@ WALK_FUNC(loadChunksFromZIP) {
     if (old_loadChunksFromZIP && G_LuaStack) old_loadChunksFromZIP(G_LuaStack, name);
 }
 
+const char *g_sign = "_game1917.com";
+const char *g_key = "g13gmrn24yXZ134";
+WALK_FUNC(xxtea_decrypt_walk) {
+    if (buff && len > 0) {
+        if (len > strlen(g_sign) && memcmp(buff, g_sign, strlen(g_sign)) == 0) {
+            unsigned int sign_len = strlen(g_sign);
+            unsigned int key_len = strlen(g_key);
+            unsigned int ret = 0;
+            unsigned char *buffer = NULL;
+            buffer = old_xxtea_decrypt((unsigned char *)buff + sign_len, len - sign_len, (unsigned char *)g_key, key_len, &ret);
+            if (buffer && ret > 0)
+                dump_write(PACK_NAME, ASSET_PATH, ASSET_NAME(name), (char *)buffer, ret);
+        }
+        else {
+            dump_write(PACK_NAME, ASSET_PATH, ASSET_NAME(name), (char *)buff, len);
+        }
+    }
+}
+
 void start_dump() {
     if (G_HookConfig->dump_lua && G_bWalkLuaCount == 0) {
         DUALLOGD("开始..................................");
@@ -362,11 +444,15 @@ void start_dump() {
     }
     if (G_HookConfig->dump_res1 && G_bWalkResCount == 0) {
         DUALLOGD("开始..................................");
-        filewalk(TEMP_PATH, WALK_ADDR(Image), NULL, G_bWalkResCount, false);
+        filewalk(TEMP_PATH, WALK_ADDR(Image), NULL, G_bWalkResCount, true);
     }
     if (G_HookConfig->dump_res2 && G_bWalkResCount == 0) {
         DUALLOGD("开始..................................");
         filewalk(TEMP_PATH, WALK_ADDR(loadChunksFromZIP), NULL, G_bWalkResCount, false);
+    }
+    if (G_HookConfig->dump_xxtea && G_bWalkResCount == 0) {
+        DUALLOGD("开始..................................");
+        filewalk(TEMP_PATH, WALK_ADDR(xxtea_decrypt_walk), NULL, G_bWalkResCount, true);
     }
 }
 
@@ -403,9 +489,10 @@ void cocos_entry(const char *name, void *handle)
         /* lua func */
         MS(handle, "lua_pushstring", lua_pushstring);
         MS(handle, "lua_settop", lua_settop);
+        //MS(handle, "luaL_newstate", luaL_newstate);
         MS(handle, "luaL_openlibs", luaL_openlibs);
-        if (!MS(handle, "luaL_loadbuffer", luaL_loadbuffer))
-            MS(handle, "lua_load", lua_load);
+        MS(handle, "luaL_loadbuffer", luaL_loadbuffer);
+        //MS(handle, "lua_load", lua_load);
         /* lua func */
         MS(handle, "cocos2dx_lua_loader", cocos2dx_lua_loader);
         //MS(handle, "_ZN7cocos2d10CCLuaStack13luaLoadBufferEP9lua_StatePKciS4_", luaLoadBuffer);
@@ -426,11 +513,9 @@ void cocos_entry(const char *name, void *handle)
 
     if (G_HookConfig->dump_res1)
     {
-        //MS(handle, "jpeg_mem_src", jpeg_mem_src);
-        //MS(handle, "png_set_read_fn", png_set_read_fn);
-        //MS(handle, "glCompressedTexImage2D", glCompressedTexImage2D);
-        MS_Function((void *)glCompressedTexImage2D, glCompressedTexImage2D);
-#if 1
+        MS(handle, "jpeg_mem_src", jpeg_mem_src);
+        MS(handle, "png_set_read_fn", png_set_read_fn);
+#if 0
         if (!MS(handle, "_ZN7cocos2d7CCImage17initWithImageDataEPviNS0_12EImageFormatEiii", initWithImageData))
             MS(handle, "_ZN7cocos2d5Image17initWithImageDataEPKhi", initWithImageData_3x);
 #endif
@@ -438,12 +523,16 @@ void cocos_entry(const char *name, void *handle)
             if (!MS(handle, "_ZN7cocos2d6Sprite6createEv", Sprite_create))
                 MS(handle, "_ZN7cocos2d8CCSprite6createEPKc", Sprite_create_);
 
-#if 1
-        DUALLOGD("handle 0x[%x] base 0x[%x]", handle, base);
+#if 0 //欢乐斗地主
         MS_THUMB_SIMULATOR(base, 0x010F96FC, addImage);
         MS_THUMB_SIMULATOR(base, 0x010F7C20, sharedTextureCache);
         MS_THUMB_SIMULATOR(base, 0x010B109C, initWithImageData);
-        //MS_THUMB_SIMULATOR(base, 0x010FBA28, initWithETCFile);
+        MS_Function((void *)glCompressedTexImage2D, glCompressedTexImage2D);
+        MS_THUMB_SIMULATOR(base, 0x010FCB64, sub_10FCB64);
+#endif
+
+#if 0
+        DUALLOGD("handle 0x[%x] base 0x[%x]", handle, base);
         //MS_THUMB(base, 0x0052F0CC, Sprite_create);
 #endif
     }

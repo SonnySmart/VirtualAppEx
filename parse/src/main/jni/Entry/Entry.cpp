@@ -30,7 +30,7 @@ extern "C" void hook_entry(const char *name, void *handle)
         }
         //_ZN7cocos2d14cocos2dVersionEv
         //luaL_loadbufferx
-#if 1
+#if 0
         if (1)
 #else
         if (findSymbol("_ZN7cocos2d14cocos2dVersionEv", HOOK_NAME, (unsigned long *)&symbol) == 0)
